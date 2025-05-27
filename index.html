@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KT 결합 할인 계산기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .btn-primary { background-color: #0ea5e9; color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; }
+        .btn-primary:hover { background-color: #0284c7; }
+        .result-card { background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <header class="bg-sky-700 text-white p-6 shadow-md">
+        <div class="container mx-auto max-w-4xl">
+            <h1 class="text-3xl font-bold text-center">KT 결합 할인 계산기</h1>
+            <p class="text-center text-sky-200 mt-1">선택하신 서비스와 할인 유형에 따른 예상 요금을 계산해 보세요.</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto max-w-4xl p-6">
+        <div class="result-card">
+            <h2 class="text-2xl font-bold text-sky-700 mb-4">🚀 웹사이트 배포 성공!</h2>
+            <p class="text-lg mb-4">KT 결합 할인 계산기가 성공적으로 배포되었습니다.</p>
+            
+            <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                <h3 class="font-semibold text-blue-800 mb-2">주요 기능:</h3>
+                <ul class="list-disc list-inside text-blue-700 space-y-1">
+                    <li>🌐 인터넷 요금제 계산 (슬림/베이직/에센스/프리미엄)</li>
+                    <li>📺 TV 서비스 및 추가 TV 옵션</li>
+                    <li>📞 집전화 요금제</li>
+                    <li>📱 모바일 결합 (최대 5회선)</li>
+                    <li>💰 다양한 할인 유형 계산</li>
+                    <li>🎁 사은품 정보</li>
+                    <li>📋 상담원용 메모 및 문자 스크립트 생성</li>
+                </ul>
+            </div>
+
+            <div class="bg-green-50 p-4 rounded-lg mb-4">
+                <h3 class="font-semibold text-green-800 mb-2">✅ 배포 정보:</h3>
+                <ul class="text-green-700 space-y-1">
+                    <li><strong>배포 플랫폼:</strong> GitHub Pages</li>
+                    <li><strong>접속 주소:</strong> <a href="https://james04020218.github.io/kt-bundle-discount-calculator/" class="text-blue-600 underline">https://james04020218.github.io/kt-bundle-discount-calculator/</a></li>
+                    <li><strong>자동 배포:</strong> main 브랜치에 커밋 시 자동 업데이트</li>
+                </ul>
+            </div>
+
+            <div class="text-center">
+                <button id="testBtn" class="btn-primary">계산기 테스트</button>
+            </div>
+        </div>
+
+        <div id="calculator" class="hidden">
+            <div class="result-card">
+                <h3 class="text-xl font-semibold text-sky-600 mb-3">간단 계산 테스트</h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block mb-2 font-medium">인터넷 요금제:</label>
+                        <select id="internet" class="w-full p-2 border rounded">
+                            <option value="38500">인터넷 에센스 (1Gbps) - 38,500원</option>
+                            <option value="33000">인터넷 베이직 (500Mbps) - 33,000원</option>
+                            <option value="22000">인터넷 슬림 (100Mbps) - 22,000원</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-2 font-medium">TV 서비스:</label>
+                        <select id="tv" class="w-full p-2 border rounded">
+                            <option value="11000">지니 TV 슬림 - 11,000원</option>
+                            <option value="12100">지니 TV 베이직 - 12,100원</option>
+                            <option value="0">선택 안함</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <button id="calcBtn" class="btn-primary">요금 계산</button>
+                </div>
+                <div id="result" class="mt-4 p-4 bg-gray-100 rounded hidden">
+                    <h4 class="font-semibold mb-2">계산 결과:</h4>
+                    <p id="resultText" class="text-lg"></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center p-6 bg-sky-800 text-sky-200 text-sm">
+        <p>© 2024 KT 결합 할인 계산기. GitHub Pages로 배포됨.</p>
+    </footer>
+
+    <script>
+        document.getElementById('testBtn').addEventListener('click', function() {
+            document.getElementById('calculator').classList.remove('hidden');
+            this.style.display = 'none';
+        });
+
+        document.getElementById('calcBtn').addEventListener('click', function() {
+            const internet = parseInt(document.getElementById('internet').value);
+            const tv = parseInt(document.getElementById('tv').value);
+            const total = internet + tv;
+            const discount = tv > 0 ? 5500 : 0; // 홈 결합 할인
+            const final = total - discount;
+            
+            document.getElementById('resultText').innerHTML = `
+                인터넷: ${internet.toLocaleString()}원<br>
+                TV: ${tv.toLocaleString()}원<br>
+                결합 할인: -${discount.toLocaleString()}원<br>
+                <strong>총 월 요금: ${final.toLocaleString()}원</strong>
+            `;
+            document.getElementById('result').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
