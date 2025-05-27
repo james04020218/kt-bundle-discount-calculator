@@ -5,13 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KT 결합 할인 계산기</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Application Structure Plan: 
+        Single-page interactive calculator.
+        1. Header: Title.
+        2. Input Section: Service Selection (Internet, TV, Additional TV, Mobile, Phone, WiFi Router), Discount Type, Installation.
+        3. Action Button: "계산하기".
+        4. Output Section: Summary, Cost breakdown, Installation cost, Gift/Benefit section (now reflects additional TV gift), Message Scripts section.
+        This structure allows selection for a second TV and reflects its cost and potential additional gift in the total and messages.
+    -->
+    <!-- Visualization & Content Choices:
+        - Service Inputs: Added Additional TV selection.
+        - Results Display: Updated to show additional TV costs and reflect in totals and messages. Gift calculation updated for additional TV.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
     <style>
-        .btn-primary { background-color: #0ea5e9; color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; }
-        .btn-primary:hover { background-color: #0284c7; }
-        .result-card { background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; /* slate-50 */ }
+        .input-group { margin-bottom: 1.5rem; }
+        .input-label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #334155; /* slate-700 */ }
+        .input-field, .select-field { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; /* slate-300 */ border-radius: 0.375rem; box-shadow: sm; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
+        .input-field:focus, .select-field:focus { border-color: #0ea5e9; /* sky-500 */ outline: none; box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.25); }
+        .btn-primary { background-color: #0ea5e9; /* sky-500 */ color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.3s ease; }
+        .btn-primary:hover { background-color: #0284c7; /* sky-600 */ }
+        .btn-secondary { background-color: #64748b; /* slate-500 */ color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 500; transition: background-color 0.3s ease; }
+        .btn-secondary:hover { background-color: #475569; /* slate-600 */ }
+        .section-title { font-size: 1.5rem; font-weight: 700; color: #0369a1; /* sky-700 */ margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #38bdf8 /* sky-400 */;}
+        .result-card { background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); margin-bottom: 1.5rem; }
+        .result-label { color: #475569; /* slate-600 */ }
+        .result-value { color: #1e293b; /* slate-800 */ font-weight: 600;}
+        .total-value { color: #f59e0b; /* amber-500 */ font-size: 1.5rem; font-weight: 700;}
+        .mobile-line-item { border: 1px solid #e2e8f0; /* slate-200 */ padding: 1rem; border-radius: 0.375rem; margin-bottom: 0.75rem; }
+        .radio-label { margin-right: 1rem; margin-bottom: 0.5rem; display: inline-flex; align-items: center; cursor: pointer;}
+        .radio-input { margin-right: 0.5rem; accent-color: #0ea5e9; /* sky-500 */ }
+        .info-box { background-color: #eff6ff; /* blue-50 */ border-left: 4px solid #3b82f6; /* blue-500 */ padding: 1rem; margin-top:0.5rem; margin-bottom:1rem; font-size: 0.875rem; color: #1e40af; /* blue-800 */}
+        .info-box ul { padding-left: 1.25rem; list-style-type: disc; }
+        .info-box ul ul { padding-left: 1rem; list-style-type: circle;}
+        .toggle-switch { position: relative; display: inline-block; width: 40px; height: 20px; margin-left: 10px; vertical-align: middle;}
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px;}
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%;}
+        input:checked + .slider { background-color: #2196F3; }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .discount-details { background-color: #e0f2fe; border: 1px solid #7dd3fc; padding: 0.75rem; border-radius: 0.375rem; font-size:0.875rem; }
+        .discount-details ul { padding-left: 1.25rem; }
+        .discount-details ul ul { padding-left: 1rem; }
+        .summary-item { margin-bottom: 0.25rem; }
+        .message-script-area { width: 100%; min-height: 150px; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word; }
+        .copy-button-container { text-align: right; margin-top: 0.5rem; }
+        .copy-feedback { font-size: 0.75rem; color: green; margin-left: 0.5rem; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="text-slate-800">
     <header class="bg-sky-700 text-white p-6 shadow-md">
         <div class="container mx-auto max-w-4xl">
             <h1 class="text-3xl font-bold text-center">KT 결합 할인 계산기</h1>
@@ -19,95 +62,1182 @@
         </div>
     </header>
 
-    <main class="container mx-auto max-w-4xl p-6">
-        <div class="result-card">
-            <h2 class="text-2xl font-bold text-sky-700 mb-4">🚀 웹사이트 배포 성공!</h2>
-            <p class="text-lg mb-4">KT 결합 할인 계산기가 성공적으로 배포되었습니다.</p>
-            
-            <div class="bg-blue-50 p-4 rounded-lg mb-4">
-                <h3 class="font-semibold text-blue-800 mb-2">주요 기능:</h3>
-                <ul class="list-disc list-inside text-blue-700 space-y-1">
-                    <li>🌐 인터넷 요금제 계산 (슬림/베이직/에센스/프리미엄)</li>
-                    <li>📺 TV 서비스 및 추가 TV 옵션</li>
-                    <li>📞 집전화 요금제</li>
-                    <li>📱 모바일 결합 (최대 5회선)</li>
-                    <li>💰 다양한 할인 유형 계산</li>
-                    <li>🎁 사은품 정보</li>
-                    <li>📋 상담원용 메모 및 문자 스크립트 생성</li>
-                </ul>
+    <main class="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
+        <section id="inputSection" class="mb-8">
+            <h2 class="section-title">1. 서비스 선택 (3년 약정 기준, VAT 포함)</h2>
+            <p class="mb-6 text-sm text-slate-600">아래 항목들을 선택하거나 입력해주세요. 모든 요금은 KT 표준 3년 약정, 부가세 포함 금액을 기준으로 합니다. TV, 전화, 모바일 선택은 인터넷 요금 할인 계산에 영향을 미칩니다.</p>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="input-group">
+                    <label for="internetPlan" class="input-label">인터넷 요금제</label>
+                    <select id="internetPlan" class="select-field">
+                        <option value="none">선택 안함</option>
+                        <option value="인터넷 슬림" data-price="22000" data-modem="0" data-speed="100" data-type="100M">인터넷 슬림 (100Mbps, 월 22,000원)</option>
+                        <option value="인터넷 베이직" data-price="33000" data-modem="0" data-speed="500" data-type="500M_1G">인터넷 베이직 (500Mbps, 월 33,000원)</option>
+                        <option value="인터넷 에센스" data-price="38500" data-modem="0" data-speed="1000" data-type="500M_1G" selected>인터넷 에센스 (1Gbps, 월 38,500원)</option>
+                        <option value="인터넷 프리미엄" data-price="44000" data-modem="0" data-speed="2500" data-type="500M_1G">인터넷 프리미엄 (2.5Gbps, 월 44,000원)</option> 
+                        </select>
+                    <p class="text-xs text-slate-500 mt-1">참고: 위 요금은 모뎀 임대료 3년 약정 시 면제 기준입니다. (프리미엄은 와이파이 공유기 기본 포함 가정)</p>
+                </div>
+                
+                <div class="input-group">
+                    <label for="wifiRouterRental" class="input-label block mb-1">와이파이 공유기 임대 (선택)</label>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="wifiRouterRental" class="radio-input h-5 w-5">
+                        <label for="wifiRouterRental" class="ml-2 text-sm text-slate-700">월 1,100원 (1Gbps 이상 인터넷 시 무료)</label>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="tvPlan" class="input-label">TV 요금제 (1번째 TV)</label>
+                    <select id="tvPlan" class="select-field">
+                        <option value="none" data-category="없음">선택 안함</option>
+                        <option value="지니 TV 슬림" data-price="11000" data-category="베이직" selected>지니 TV 슬림 (월 11,000원)</option>
+                        <option value="지니 TV 베이직" data-price="12100" data-category="베이직">지니 TV 베이직 (월 12,100원)</option>
+                        <option value="지니 TV 라이트" data-price="13200" data-category="라이트">지니 TV 라이트 (월 13,200원)</option>
+                        <option value="지니 TV 에센스" data-price="16500" data-category="에센스">지니 TV 에센스 (월 16,500원)</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="tvStb" class="input-label">TV 셋톱박스 (1번째 TV)</label>
+                    <select id="tvStb" class="select-field">
+                        <option value="none" data-price="0">선택 안함 (TV 미선택 시)</option>
+                        <option value="일반형" data-price="2200">일반형 (월 2,200원)</option>
+                        <option value="셋톱박스 A" data-price="3300">셋톱박스 A (월 3,300원)</option>
+                        <option value="UHD" data-price="4400" selected>UHD (월 4,400원)</option>
+                        <option value="셋톱박스 3" data-price="4400">셋톱박스 3 (월 4,400원)</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="additionalTvPlan" class="input-label">추가 TV 선택 (2번째 TV)</label>
+                    <select id="additionalTvPlan" class="select-field">
+                        <option value="none" data-price="0" data-name="선택 안함">선택 안함</option>
+                        <option value="베이직 추가" data-price="10670" data-name="베이직 (236채널) + 기가지니A">베이직 (236채널) + 기가지니A (월 10,670원)</option>
+                        <option value="라이트 추가" data-price="11220" data-name="라이트 (240채널) + 기가지니A">라이트 (240채널) + 기가지니A (월 11,220원)</option>
+                        <option value="에센스 추가" data-price="13420" data-name="에센스 (266채널) + 기가지니A">에센스 (266채널) + 기가지니A (월 13,420원)</option>
+                    </select>
+                     <p class="text-xs text-slate-500 mt-1">참고: 추가 TV 요금은 해당 TV 플랜과 기가지니A 셋톱박스 임대료가 포함된 금액입니다.</p>
+                </div>
+                
+                <div class="input-group">
+                    <label for="phonePlan" class="input-label">집전화 요금제 (인터넷 결합 시)</label>
+                    <select id="phonePlan" class="select-field">
+                        <option value="none">선택 안함</option>
+                        <option value="기본요금제" data-price="4400" selected>기본요금제 (월 4,400원)</option>
+                        <option value="유선 3000" data-price="6050">유선 3000 (월 6,050원)</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="bg-green-50 p-4 rounded-lg mb-4">
-                <h3 class="font-semibold text-green-800 mb-2">✅ 배포 정보:</h3>
-                <ul class="text-green-700 space-y-1">
-                    <li><strong>배포 플랫폼:</strong> GitHub Pages</li>
-                    <li><strong>접속 주소:</strong> <a href="https://james04020218.github.io/kt-bundle-discount-calculator/" class="text-blue-600 underline">https://james04020218.github.io/kt-bundle-discount-calculator/</a></li>
-                    <li><strong>자동 배포:</strong> main 브랜치에 커밋 시 자동 업데이트</li>
-                </ul>
+            <div class="input-group mt-6">
+                <label class="input-label">모바일 회선 정보 (최대 5회선)</label>
+                <div class="flex items-center mb-2">
+                    <label for="mobileLinesCount" class="mr-2 text-sm text-slate-700">결합할 모바일 회선 수:</label>
+                    <input type="number" id="mobileLinesCount" min="0" max="5" value="0" class="input-field w-20 text-center">
+                </div>
+                <div id="mobileLinesContainer" class="space-y-3"></div>
             </div>
+        </section>
 
-            <div class="text-center">
-                <button id="testBtn" class="btn-primary">계산기 테스트</button>
+        <section id="discountTypeSection" class="mb-8">
+            <h2 class="section-title">2. 결합 할인 유형 선택</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="mb-4 text-sm text-slate-600">가장 유리한 할인 유형을 선택하거나, 각 유형별 예상 요금을 비교해보세요.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                    <div class="flex items-center">
+                        <label class="radio-label"><input type="radio" name="discountType" value="homeBundle" class="radio-input"> 홈 결합 (유선 상품 간)</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="homeBundleDetailsToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="ml-1 text-xs text-slate-500">(상세보기)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="radio-label"><input type="radio" name="discountType" value="totalAmountBundle" class="radio-input" checked> 총액 결합할인</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="totalAmountDetailsToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="ml-1 text-xs text-slate-500">(상세보기)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="radio-label"><input type="radio" name="discountType" value="premiumFamilyBundle" class="radio-input"> 프리미엄 가족결합</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="premiumFamilyDetailsToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="ml-1 text-xs text-slate-500">(상세보기)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="radio-label"><input type="radio" name="discountType" value="premiumSingleBundle" class="radio-input"> 프리미엄 싱글결합</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="premiumSingleDetailsToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="ml-1 text-xs text-slate-500">(상세보기)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="radio-label"><input type="radio" name="discountType" value="mvnoBundle" class="radio-input"> 알뜰폰 결합</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="mvnoDetailsToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="ml-1 text-xs text-slate-500">(상세보기)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="radio-label"><input type="radio" name="discountType" value="familyBundle" class="radio-input"> 패밀리 결합 (인터넷 추가회선)</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="familyBundleDetailsToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="ml-1 text-xs text-slate-500">(상세보기)</span>
+                    </div>
+                     <div class="flex items-center">
+                        <label class="radio-label"><input type="radio" name="discountType" value="separateFamilyBundle" class="radio-input"> 따로 살아도 가족결합</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="separateFamilyDetailsToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="ml-1 text-xs text-slate-500">(상세보기)</span>
+                    </div>
+                </div>
+
+                <div id="homeBundleDetailsContainer" class="mt-3 hidden discount-details">
+                    <p class="font-semibold mb-1">홈 결합 상세 (상담원 참고용):</p>
+                    <p>인터넷 할인: <span id="detailHbInternetDiscount" class="font-bold">0</span>원</p>
+                    <hr class="my-2 border-sky-300">
+                    <p class="text-xs mt-2 mb-1 text-sky-700 font-semibold">주요 참고사항:</p>
+                    <ul class="list-disc list-inside text-xs space-y-0.5">
+                        <li>인터넷과 TV 또는 집전화 중 하나 이상 결합 시 적용됩니다.</li>
+                        <li>인터넷 요금에서 5,500원 할인됩니다. (모바일 결합이 없는 경우)</li>
+                        <li>TV 또는 집전화 요금 자체에 대한 할인은 이 결합에 포함되지 않습니다.</li>
+                    </ul>
+                </div>
+                <div id="totalAmountDetailsContainer" class="mt-3 hidden discount-details">
+                    <p class="font-semibold mb-1">총액결합 상세 (상담원 참고용):</p>
+                    <p>인터넷 할인: <span id="detailInternetDiscount" class="font-bold">0</span>원</p>
+                    <p>휴대폰 할인 (참고용): <span id="detailMobileDiscount" class="font-bold">0</span>원</p>
+                    <p>총 할인 금액 (참고용): <span id="detailTotalDiscount" class="font-bold">0</span>원</p>
+                    <hr class="my-2 border-sky-300">
+                    <p class="text-xs mt-2 mb-1 text-sky-700 font-semibold">주요 참고사항:</p>
+                    <ul class="list-disc list-inside text-xs space-y-0.5">
+                        <li>할인 기준: 부가서비스, 단말기 할부금, 기타 할인 등을 제외한 순수 요금제의 총액 기준.</li>
+                        <li>혜택 구조: 인터넷+모바일 결합 시, 결합 회선이 많을수록 할인 혜택 증가.</li>
+                        <li>모바일 할인 방식: 대표 1회선에 전액 적용 또는 기여도에 따른 분할 중 선택.</li>
+                        <li>명의자 조건:
+                            <ul class="list-disc list-inside ml-4">
+                                <li>동일 명의자 모바일 최대 2회선까지 결합 가능.</li>
+                                <li>인터넷과 휴대폰 명의자가 달라도 결합 가능 (대표자 기준 직계가족 범위 내).</li>
+                            </ul>
+                        </li>
+                        <li>결합 회선 수: 최대 인터넷 1회선 + 휴대폰 5회선.</li>
+                        <li>중복 가입 불가: 기존 무선간 휴대폰 결합 상품과 중복 불가.</li>
+                    </ul>
+                </div>
+                <div id="premiumFamilyDetailsContainer" class="mt-3 hidden discount-details">
+                    <p class="font-semibold mb-1">프리미엄 가족결합 상세 (상담원 참고용):</p>
+                    <p>인터넷 할인: <span id="detailPfInternetDiscount" class="font-bold">0</span>원</p>
+                     <p>모바일 할인 (참고용): 베이스 회선 총액할인 + 추가 고가회선 각 25%</p>
+                    <hr class="my-2 border-sky-300">
+                    <p class="text-xs mt-2 mb-1 text-sky-700 font-semibold">주요 참고사항:</p>
+                    <ul class="list-disc list-inside text-xs space-y-0.5">
+                        <li>조건: 총액 결합 기반, 월 77,000원 이상 휴대폰 2대 이상 결합 시.</li>
+                        <li>베이스 회선 (7.7만 이상 1회선): 총액결합 방식의 모바일 할인 적용 (예: -11,000원).</li>
+                        <li>추가 고가 회선 (2~7번째, 7.7만 이상): 각 모바일 월정액 25% 할인 (선택약정 중복 가능).</li>
+                        <li>저가 회선: 베이스 회선과 합산하여 총액결합 할인 계산에 반영.</li>
+                        <li>최대 인터넷 1회선 + 휴대폰 2~7회선.</li>
+                    </ul>
+                </div>
+                <div id="premiumSingleDetailsContainer" class="mt-3 hidden discount-details">
+                    <p class="font-semibold mb-1">프리미엄 싱글결합 상세 (상담원 참고용):</p>
+                    <p>인터넷 할인: <span id="detailPsInternetDiscount" class="font-bold">0</span>원</p>
+                    <p>모바일 할인 (참고용): 조건 충족 시 해당 모바일 25%</p>
+                    <hr class="my-2 border-sky-300">
+                    <p class="text-xs mt-2 mb-1 text-sky-700 font-semibold">주요 참고사항:</p>
+                    <ul class="list-disc list-inside text-xs space-y-0.5">
+                        <li>조건: 인터넷 500M 이상 + 휴대폰 월정액 77,000원 이상 1회선.</li>
+                        <li>인터넷 단독 시: 인터넷 5,500원 할인.</li>
+                        <li>인터넷+TV/집전화 번들 시: 인터넷 할인 없음 (모바일 25% 할인만 적용. 계산기에는 인터넷 할인만 표시).</li>
+                        <li>모바일 25% 할인: 선택약정 중복 가능.</li>
+                    </ul>
+                </div>
+                <div id="familyBundleDetailsContainer" class="mt-3 hidden discount-details">
+                    <p class="font-semibold mb-1">패밀리 결합 (인터넷 추가회선) 상세 (상담원 참고용):</p>
+                    <p>인터넷 할인 (자회선): <span id="detailFbInternetDiscount" class="font-bold">0</span>원</p>
+                    <hr class="my-2 border-sky-300">
+                     <p class="text-xs mt-2 mb-1 text-sky-700 font-semibold">주요 참고사항:</p>
+                    <ul class="list-disc list-inside text-xs space-y-0.5">
+                        <li>조건: 기존 KT 인터넷(모회선) 사용 가족이 신규 장소에 추가 인터넷(자회선) 설치 시.</li>
+                        <li>100M 자회선: 5,500원 할인.</li>
+                        <li>500M 이상 자회선: 11,000원 할인.</li>
+                        <li>개통 후 1개월 내 결합.</li>
+                    </ul>
+                </div>
+                 <div id="separateFamilyDetailsContainer" class="mt-3 hidden discount-details">
+                    <p class="font-semibold mb-1">따로 살아도 가족결합 상세 (상담원 참고용):</p>
+                    <p>인터넷 할인 (추가 회선): <span id="detailSfInternetDiscount" class="font-bold">0</span>원</p>
+                    <p>TV 할인 (참고용, 추가 회선): <span id="detailSfTvDiscount" class="font-bold">0</span>원</p>
+                    <p>모바일 추가 할인 (참고용): 가능성 있음 (총액결합 기반)</p>
+                    <hr class="my-2 border-sky-300">
+                     <p class="text-xs mt-2 mb-1 text-sky-700 font-semibold">주요 참고사항:</p>
+                    <ul class="list-disc list-inside text-xs space-y-0.5">
+                        <li>방식: 모회선이 총액 결합 중일 때, 추가 인터넷 회선에 적용 (총액 결합에 추가).</li>
+                        <li>100M 인터넷: 인터넷/TV 할인 없음.</li>
+                        <li>500M 인터넷: 인터넷 2,200원 할인, TV 2,200원 할인 (TV 할인은 참고용).</li>
+                        <li>1G 인터넷: 인터넷 3,300원 할인, TV 3,300원 할인 (TV 할인은 참고용).</li>
+                        <li>조건: 베이스 회선(모회선) 인1+모1 지정 필수. 베이스 회선 제외 인터넷 최대 5개까지 결합 가능.</li>
+                        <li>가입 대상: 25년 3월 이후 인터넷 신규 가입자 (기존 가입자는 약정 종료 후 재약정 시).</li>
+                        <li>중복 불가: 패밀리 자회선은 중복 적용 불가.</li>
+                        <li>신청: 선결 또는 개통 후 익월 말까지 가능. 서류 필요.</li>
+                    </ul>
+                </div>
+                <div id="mvnoDetailsContainer" class="mt-3 hidden discount-details">
+                    <p class="font-semibold mb-1">알뜰폰 결합 상세 (상담원 참고용):</p>
+                    <p>인터넷 할인: <span id="detailMvnoInternetDiscount" class="font-bold">0</span>원</p>
+                    <hr class="my-2 border-sky-300">
+                    <p class="text-xs mt-2 mb-1 text-sky-700 font-semibold">주요 참고사항:</p>
+                    <ul class="list-disc list-inside text-xs space-y-0.5">
+                        <li>100Mbps 인터넷: 3,300원 할인.</li>
+                        <li>500Mbps ~ 1Gbps 인터넷: 5,500원 할인.</li>
+                        <li>개인사업자 / 법인사업자 결합 불가.</li>
+                        <li>결합 가능 알뜰폰 통신사: KT M모바일, 미니게이트(쉐이크모바일), 유니컴즈(모빙), 토스모바일, 국민은행(리브모바일), 더피엔엘(퍼스트모바일), 에르엘(오파스넷모바일), 고고팩토리, 스마텔, 스카이라이프, 코드모바일, 프리티, 니오라코리아, 스피츠모바일, 아이즈비전 등.</li>
+                        <li>인터넷 설치 후 알뜰 통신사에 결합 요청 필요.</li>
+                        <li>알뜰폰 통신사 변경 시 결합 해지 후 재결합 불가.</li>
+                    </ul>
+                </div>
             </div>
+        </section>
+
+        <section id="installationSection" class="mb-8">
+            <h2 class="section-title">3. 설치 옵션</h2>
+            <div class="input-group bg-white p-6 rounded-lg shadow">
+                <label class="input-label">설치 희망 시점 (설치비 변동)</label>
+                <div class="space-y-2">
+                    <label class="radio-label"><input type="radio" name="installationTime" value="weekday" class="radio-input" checked> 평일 주간</label>
+                    <label class="radio-label"><input type="radio" name="installationTime" value="weekend" class="radio-input"> 주말/야간 (할증 적용)</label>
+                </div>
+            </div>
+        </section>
+
+        <div class="text-center mb-8">
+            <button id="calculateButton" class="btn-primary text-lg">예상 요금 계산하기</button>
         </div>
 
-        <div id="calculator" class="hidden">
+        <section id="resultSection" class="hidden">
+            <h2 class="section-title">📊 계산 결과</h2>
+            
             <div class="result-card">
-                <h3 class="text-xl font-semibold text-sky-600 mb-3">간단 계산 테스트</h3>
+                <h3 class="text-xl font-semibold text-sky-600 mb-3">요금 요약 (VAT 포함)</h3>
                 <div class="grid md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block mb-2 font-medium">인터넷 요금제:</label>
-                        <select id="internet" class="w-full p-2 border rounded">
-                            <option value="38500">인터넷 에센스 (1Gbps) - 38,500원</option>
-                            <option value="33000">인터넷 베이직 (500Mbps) - 33,000원</option>
-                            <option value="22000">인터넷 슬림 (100Mbps) - 22,000원</option>
-                        </select>
+                        <p class="result-label summary-item">선택 인터넷: <span id="selectedInternet" class="result-value"></span></p>
+                        <p class="result-label summary-item">선택 TV (1번째): <span id="selectedTv" class="result-value"></span></p>
+                        <p class="result-label summary-item">선택 셋톱박스 (1번째 TV): <span id="selectedStb" class="result-value"></span></p>
+                        <p class="result-label summary-item">선택 추가 TV (2번째): <span id="selectedAdditionalTv" class="result-value"></span></p>
+                        <p class="result-label summary-item">선택 집전화: <span id="selectedPhone" class="result-value"></span></p>
+                        <p class="result-label summary-item">모바일 회선 수: <span id="selectedMobileCount" class="result-value"></span></p>
+                        <p class="result-label summary-item">적용 할인 유형: <span id="selectedDiscountType" class="result-value"></span></p>
                     </div>
                     <div>
-                        <label class="block mb-2 font-medium">TV 서비스:</label>
-                        <select id="tv" class="w-full p-2 border rounded">
-                            <option value="11000">지니 TV 슬림 - 11,000원</option>
-                            <option value="12100">지니 TV 베이직 - 12,100원</option>
-                            <option value="0">선택 안함</option>
-                        </select>
+                        <p class="result-label summary-item">월 인터넷 기본료: <span id="totalBaseInternetCost" class="result-value">0</span> 원</p>
+                        <p class="result-label text-green-600 summary-item">월 인터넷 결합 할인액: <span id="totalInternetDiscountAmount" class="result-value text-green-600">0</span> 원</p>
+                        <p class="result-label summary-item">월 모뎀 임대료: <span id="internetModemRental" class="result-value">0</span> 원</p>
+                        <p class="result-label summary-item">월 와이파이 공유기 임대료: <span id="wifiRouterRentalCostDisplay" class="result-value">0</span> 원</p>
+                        
+                        <div id="tvCostSummaryContainer" class="hidden"> 
+                             <hr class="my-1 border-slate-200">
+                            <p class="result-label summary-item">월 TV 기본료 (1번째): <span id="tvBaseCostDisplay" class="result-value">0</span> 원</p>
+                            <p class="result-label text-green-600 summary-item">월 TV 결합 할인액 (1번째): <span id="tvDiscountDisplay" class="result-value text-green-600">0</span> 원</p>
+                            <p class="result-label summary-item">월 TV 셋톱박스 임대료 (1번째): <span id="stbRentalCostDisplay" class="result-value">0</span> 원</p>
+                        </div>
+                         <div id="additionalTvCostSummaryContainer" class="hidden">
+                             <hr class="my-1 border-slate-200">
+                            <p class="result-label summary-item">월 추가 TV 요금 (2번째, 셋톱포함): <span id="additionalTvCostDisplay" class="result-value">0</span> 원</p>
+                        </div>
+                        <div id="phoneCostSummaryContainer" class="hidden">
+                             <hr class="my-1 border-slate-200">
+                            <p class="result-label summary-item">월 집전화 기본료: <span id="phoneBaseCostDisplay" class="result-value">0</span> 원</p>
+                            <p class="result-label text-green-600 summary-item">월 집전화 결합 할인액: <span id="phoneDiscountDisplay" class="result-value text-green-600">0</span> 원</p>
+                        </div>
+                        <hr class="my-1 border-sky-300">
+                        <p class="mt-2 text-lg font-semibold"><span id="finalCostLabel">최종 예상 월 납부액</span>: <span id="finalMonthlyCost" class="total-value">0</span> 원</p>
                     </div>
                 </div>
-                <div class="mt-4 text-center">
-                    <button id="calcBtn" class="btn-primary">요금 계산</button>
-                </div>
-                <div id="result" class="mt-4 p-4 bg-gray-100 rounded hidden">
-                    <h4 class="font-semibold mb-2">계산 결과:</h4>
-                    <p id="resultText" class="text-lg"></p>
+            </div>
+
+            <div class="result-card">
+                <h3 class="text-xl font-semibold text-sky-600 mb-3">🎁 사은품 혜택 (예상)</h3>
+                <p class="result-label summary-item">현금 사은품: <span id="giftCash" class="result-value">0</span> 원</p>
+                <p class="result-label summary-item">상품권 사은품: <span id="giftVoucher" class="result-value">0</span> 원</p>
+                <p class="result-label summary-item">일반전화 추가 상품권: <span id="giftPhoneVoucher" class="result-value">0</span> 원</p>
+                <p class="result-label summary-item">추가 TV 사은품 (현금): <span id="giftAdditionalTv" class="result-value">0</span> 원</p>
+                <hr class="my-1">
+                <p class="result-label summary-item font-semibold">총 사은품 가치: <span id="giftTotal" class="result-value text-green-600">0</span> 원</p>
+                <p class="text-xs text-slate-500 mt-2">✅ KT 일반전화 상품권 지류 2만원 추가 / 추가셋톱 3만원 (참고)</p>
+                <p class="text-xs text-slate-500 mt-1">✅ KT 롯데 / LG 신세계 모바일 상품권은 현금 교환 가능 (참고)</p>
+                <p class="text-xs text-red-500 mt-1">* 사은품 정보는 변동될 수 있으니 가입 시점에 반드시 재확인 바랍니다.</p>
+            </div>
+
+            <div class="result-card">
+                <h3 class="text-xl font-semibold text-sky-600 mb-3">초기 설치 비용 (선택한 모든 유선 서비스 기준)</h3>
+                <p class="result-label">예상 총 설치비: <span id="installationCostResult" class="result-value text-lg">0</span> 원</p>
+                <p class="text-xs text-slate-500 mt-1">* 선택하신 설치 시점(평일/주말) 및 서비스 조합에 따라 계산됩니다. 프로모션으로 면제될 수 있습니다.</p>
+            </div>
+            
+             <div class="result-card mt-6">
+                <h3 class="text-xl font-semibold text-sky-600 mb-2">추가 안내사항</h3>
+                <ul class="list-disc list-inside text-sm text-slate-600 space-y-1">
+                    <li>본 계산기는 제공된 KT 결합상품 정보를 바탕으로 한 추정치입니다.</li>
+                    <li>**"인터넷+인터넷 패밀리 결합"** 및 **"따로 살아도 가족결합"**은 현재 계산기에서 '추가 회선(자회선)' 기준으로 할인액을 보여줍니다. 모회선 조건 및 기타 복잡한 다회선 할인은 현재 계산기 구조상 모두 반영되지 않았습니다. 이러한 유형의 할인은 별도 문의가 필요합니다.</li>
+                    <li>실제 요금은 KT의 최신 정책, 가입 시점의 프로모션, 추가 선택 사항에 따라 달라질 수 있습니다.</li>
+                    <li>약정 기간 내 해지 시 위약금이 발생할 수 있습니다.</li>
+                    <li>더 정확한 정보는 KT 공식 홈페이지 또는 고객센터(국번없이 100)를 통해 확인하시기 바랍니다.</li>
+                </ul>
+            </div>
+        </section>
+        
+        <section id="messageScriptSection" class="hidden mt-12">
+            <h2 class="section-title">📄 고객 안내 문자 스크립트 (상담원 참고용)</h2>
+            <div class="result-card">
+                <h3 class="text-xl font-semibold text-sky-600 mb-3">1. 백메가 전산 메모</h3>
+                <textarea id="memoScript" class="message-script-area" readonly></textarea>
+                <div class="copy-button-container">
+                    <button onclick="copyToClipboard('memoScript', 'copyFeedbackMemo')" class="btn-secondary text-xs">복사하기</button>
+                    <span id="copyFeedbackMemo" class="copy-feedback"></span>
                 </div>
             </div>
-        </div>
+            <div class="result-card">
+                <h3 class="text-xl font-semibold text-sky-600 mb-3">2. 상품 안내 문자</h3>
+                <textarea id="infoScript" class="message-script-area" readonly></textarea>
+                 <div class="copy-button-container">
+                    <button onclick="copyToClipboard('infoScript', 'copyFeedbackInfo')" class="btn-secondary text-xs">복사하기</button>
+                    <span id="copyFeedbackInfo" class="copy-feedback"></span>
+                </div>
+            </div>
+            <div class="result-card">
+                <h3 class="text-xl font-semibold text-sky-600 mb-3">3. 가입 완료 문자</h3>
+                <textarea id="completeScript" class="message-script-area" readonly></textarea>
+                 <div class="copy-button-container">
+                    <button onclick="copyToClipboard('completeScript', 'copyFeedbackComplete')" class="btn-secondary text-xs">복사하기</button>
+                    <span id="copyFeedbackComplete" class="copy-feedback"></span>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <footer class="text-center p-6 bg-sky-800 text-sky-200 text-sm">
-        <p>© 2024 KT 결합 할인 계산기. GitHub Pages로 배포됨.</p>
+    <footer class="text-center p-6 mt-12 bg-sky-800 text-sky-200 text-sm">
+        <p>본 계산기는 KT abkholdings에 제공합니다.</p>
+        <p>&copy; 2024 KT 결합 할인 계산기. 모든 정보는 참고용입니다.</p>
     </footer>
 
     <script>
-        document.getElementById('testBtn').addEventListener('click', function() {
-            document.getElementById('calculator').classList.remove('hidden');
-            this.style.display = 'none';
+        const internetPlans = { 
+            "인터넷 슬림": { basePrice: 22000, modemFee: 0, speed: 100, type: "100M" },
+            "인터넷 베이직": { basePrice: 33000, modemFee: 0, speed: 500, type: "500M_1G" },
+            "인터넷 에센스": { basePrice: 38500, modemFee: 0, speed: 1000, type: "500M_1G" },
+            "인터넷 프리미엄": { basePrice: 44000, modemFee: 0, speed: 2500, type: "500M_1G" },
+        };
+
+        const tvPlans = { 
+            "지니 TV 슬림": { basePrice: 11000, category: "베이직" },
+            "지니 TV 베이직": { basePrice: 12100, category: "베이직" },
+            "지니 TV 라이트": { basePrice: 13200, category: "라이트" },
+            "지니 TV 에센스": { basePrice: 16500, category: "에센스" },
+        };
+
+        const additionalTvPlans = {
+            "none": { basePrice: 0, name: "선택 안함" },
+            "베이직 추가": { basePrice: 10670, name: "베이직 (236채널) + 기가지니A" },
+            "라이트 추가": { basePrice: 11220, name: "라이트 (240채널) + 기가지니A" },
+            "에센스 추가": { basePrice: 13420, name: "에센스 (266채널) + 기가지니A" }
+        };
+        
+        const tvStbs = { 
+            "일반형": { rentalFee: 2200 },
+            "셋톱박스 A": { rentalFee: 3300 },
+            "UHD": { rentalFee: 4400 },
+            "셋톱박스 3": { rentalFee: 4400 },
+        };
+
+        const phonePlans = { 
+            "기본요금제": { basePrice: 4400 },
+            "유선 3000": { basePrice: 6050 },
+        };
+
+        const simpleHomeBundleInternetDiscount = 5500; 
+
+        const totalAmountDiscountsTable = { 
+            "100M": [ 
+                { mobileTotalMin: 0, mobileTotalMax: 21999, internetDiscount: 1650, mobileDiscountInternal: 0, totalDiscount: 1650 },
+                { mobileTotalMin: 22000, mobileTotalMax: 64899, internetDiscount: 3300, mobileDiscountInternal: 0, totalDiscount: 3300 },
+                { mobileTotalMin: 64900, mobileTotalMax: 108899, internetDiscount: 5500, mobileDiscountInternal: 3300, totalDiscount: 8800 },
+                { mobileTotalMin: 108900, mobileTotalMax: 141899, internetDiscount: 5500, mobileDiscountInternal: 14300, totalDiscount: 19800 },
+                { mobileTotalMin: 141900, mobileTotalMax: 174899, internetDiscount: 5500, mobileDiscountInternal: 18700, totalDiscount: 24200 },
+                { mobileTotalMin: 174900, mobileTotalMax: Infinity, internetDiscount: 5500, mobileDiscountInternal: 23100, totalDiscount: 28600 }
+            ],
+            "500M_1G": [ 
+                { mobileTotalMin: 0, mobileTotalMax: 21999, internetDiscount: 2200, mobileDiscountInternal: 0, totalDiscount: 2200 },
+                { mobileTotalMin: 22000, mobileTotalMax: 64899, internetDiscount: 5500, mobileDiscountInternal: 0, totalDiscount: 5500 },
+                { mobileTotalMin: 64900, mobileTotalMax: 108899, internetDiscount: 5500, mobileDiscountInternal: 5500, totalDiscount: 11000 },
+                { mobileTotalMin: 108900, mobileTotalMax: 141899, internetDiscount: 5500, mobileDiscountInternal: 16610, totalDiscount: 22110 },
+                { mobileTotalMin: 141900, mobileTotalMax: 174899, internetDiscount: 5500, mobileDiscountInternal: 22100, totalDiscount: 27610 },
+                { mobileTotalMin: 174900, mobileTotalMax: Infinity, internetDiscount: 5500, mobileDiscountInternal: 27610, totalDiscount: 33110 }
+            ]
+        };
+        
+        const premiumFamilyConfig = {
+            internetDiscount: 5500,
+            minHighTierMobileFee: 77000,
+            minHighTierLinesForPremiumFamily: 2,
+            additionalHighTierMobileDiscountRate: 0.25,
+        };
+
+        const premiumSingleConfig = {
+            internetDiscountIfStandalone: 5500, 
+            mobileDiscountRate: 0.25, 
+            minInternetSpeedForDiscount: 500,
+            minMobileFeeForDiscount: 77000,
+        };
+
+        const mvnoBundleConfig = { 
+            internetDiscount: {
+                "100M": 3300,
+                "500M_1G": 5500 
+            }
+        };
+        
+        const familyBundleConfig = { 
+            internetDiscount: {
+                "100M": 5500,
+                "500M_1G": 11000
+            }
+        };
+        
+        const separateFamilyBundleConfig = {
+            internetDiscount: { "100M": 0, "500M_1G": 2200, "1000": 3300 }, 
+            tvDiscountReference: { "100M": 0, "500M_1G": 2200, "1000": 3300 } 
+        };
+
+         const giftTable = {
+            "베이직": { 
+                "100단독": { cash: 50000, voucher: 40000 }, "500단독": { cash: 100000, voucher: 40000 }, "1G단독": { cash: 90000, voucher: 50000 },
+                "100번들": { cash: 310000, voucher: 60000 }, "500번들": { cash: 390000, voucher: 60000 }, "기가번들": { cash: 360000, voucher: 90000 }
+            },
+            "라이트": {
+                "100단독": { cash: 50000, voucher: 40000 }, "500단독": { cash: 100000, voucher: 40000 }, "1G단독": { cash: 90000, voucher: 50000 },
+                "100번들": { cash: 310000, voucher: 60000 }, "500번들": { cash: 380000, voucher: 70000 }, "기가번들": { cash: 350000, voucher: 100000 }
+            },
+            "에센스": { 
+                "100단독": { cash: 50000, voucher: 40000 }, "500단독": { cash: 100000, voucher: 40000 }, "1G단독": { cash: 90000, voucher: 50000 },
+                "100번들": { cash: 310000, voucher: 60000 }, "500번들": { cash: 420000, voucher: 30000 }, "기가번들": { cash: 320000, voucher: 30000 }
+            }
+        };
+
+
+        const wifiRouterBaseFee = 1100;
+
+        const installationFees = { 
+            internet_only: { weekday: 36000, weekend: 45000 },
+            tv_only: { weekday: 34100, weekend: 42625 },
+            phone_only: { weekday: 27500, weekend: 34375 }, 
+            internet_tv: { weekday: 56200, weekend: 71250 }, 
+            internet_phone: { weekday: 36000, weekend: 45000}, 
+            tv_phone: { weekday: (34100 + 27500), weekend: (42625 + 34375) },
+            internet_tv_phone: { weekday: 56200, weekend: 71250 },
+            internet_tv_addTv: { weekday: 71600, weekend: 90500 } 
+        };
+
+        const internetPlanEl = document.getElementById('internetPlan');
+        const wifiRouterRentalEl = document.getElementById('wifiRouterRental');
+        const tvPlanEl = document.getElementById('tvPlan');
+        const tvStbEl = document.getElementById('tvStb');
+        const additionalTvPlanEl = document.getElementById('additionalTvPlan');
+        const phonePlanEl = document.getElementById('phonePlan');
+        const mobileLinesCountEl = document.getElementById('mobileLinesCount');
+        const mobileLinesContainerEl = document.getElementById('mobileLinesContainer');
+        const discountTypeRadios = document.querySelectorAll('input[name="discountType"]');
+        
+        const homeBundleDetailsToggleEl = document.getElementById('homeBundleDetailsToggle');
+        const homeBundleDetailsContainerEl = document.getElementById('homeBundleDetailsContainer');
+        const detailHbInternetDiscountEl = document.getElementById('detailHbInternetDiscount');
+
+        const totalAmountDetailsToggleEl = document.getElementById('totalAmountDetailsToggle');
+        const totalAmountDetailsContainerEl = document.getElementById('totalAmountDetailsContainer');
+        const detailInternetDiscountEl = document.getElementById('detailInternetDiscount');
+        const detailMobileDiscountEl = document.getElementById('detailMobileDiscount');
+        const detailTotalDiscountEl = document.getElementById('detailTotalDiscount');
+
+        const premiumFamilyDetailsToggleEl = document.getElementById('premiumFamilyDetailsToggle');
+        const premiumFamilyDetailsContainerEl = document.getElementById('premiumFamilyDetailsContainer');
+        const detailPfInternetDiscountEl = document.getElementById('detailPfInternetDiscount');
+
+        const premiumSingleDetailsToggleEl = document.getElementById('premiumSingleDetailsToggle');
+        const premiumSingleDetailsContainerEl = document.getElementById('premiumSingleDetailsContainer');
+        const detailPsInternetDiscountEl = document.getElementById('detailPsInternetDiscount');
+
+        const familyBundleDetailsToggleEl = document.getElementById('familyBundleDetailsToggle');
+        const familyBundleDetailsContainerEl = document.getElementById('familyBundleDetailsContainer');
+        const detailFbInternetDiscountEl = document.getElementById('detailFbInternetDiscount');
+        
+        const separateFamilyDetailsToggleEl = document.getElementById('separateFamilyDetailsToggle');
+        const separateFamilyDetailsContainerEl = document.getElementById('separateFamilyDetailsContainer');
+        const detailSfInternetDiscountEl = document.getElementById('detailSfInternetDiscount');
+        const detailSfTvDiscountEl = document.getElementById('detailSfTvDiscount');
+
+        const mvnoDetailsToggleEl = document.getElementById('mvnoDetailsToggle'); 
+        const mvnoDetailsContainerEl = document.getElementById('mvnoDetailsContainer'); 
+        const detailMvnoInternetDiscountEl = document.getElementById('detailMvnoInternetDiscount'); 
+
+        const calculateButton = document.getElementById('calculateButton');
+        const resultSection = document.getElementById('resultSection');
+        
+        const selectedInternetEl = document.getElementById('selectedInternet');
+        const selectedTvEl = document.getElementById('selectedTv');
+        const selectedStbEl = document.getElementById('selectedStb');
+        const selectedAdditionalTvEl = document.getElementById('selectedAdditionalTv');
+        const selectedPhoneEl = document.getElementById('selectedPhone');
+        const selectedMobileCountEl = document.getElementById('selectedMobileCount');
+        const selectedDiscountTypeEl = document.getElementById('selectedDiscountType');
+        
+        const totalBaseInternetCostEl = document.getElementById('totalBaseInternetCost');
+        const totalInternetDiscountAmountEl = document.getElementById('totalInternetDiscountAmount');
+        const internetModemRentalEl = document.getElementById('internetModemRental');
+        const wifiRouterRentalCostDisplayEl = document.getElementById('wifiRouterRentalCostDisplay');
+        
+        const tvCostSummaryContainerEl = document.getElementById('tvCostSummaryContainer');
+        const tvBaseCostDisplayEl = document.getElementById('tvBaseCostDisplay');
+        const tvDiscountDisplayEl = document.getElementById('tvDiscountDisplay');
+        const stbRentalCostDisplayEl = document.getElementById('stbRentalCostDisplay');
+
+        const additionalTvCostSummaryContainerEl = document.getElementById('additionalTvCostSummaryContainer');
+        const additionalTvCostDisplayEl = document.getElementById('additionalTvCostDisplay');
+
+        const phoneCostSummaryContainerEl = document.getElementById('phoneCostSummaryContainer');
+        const phoneBaseCostDisplayEl = document.getElementById('phoneBaseCostDisplay');
+        const phoneDiscountDisplayEl = document.getElementById('phoneDiscountDisplay');
+
+        const finalMonthlyCostEl = document.getElementById('finalMonthlyCost');
+        const finalCostLabelEl = document.getElementById('finalCostLabel');
+        const installationCostResultEl = document.getElementById('installationCostResult');
+
+        const giftCashEl = document.getElementById('giftCash');
+        const giftVoucherEl = document.getElementById('giftVoucher');
+        const giftPhoneVoucherEl = document.getElementById('giftPhoneVoucher');
+        const giftAdditionalTvEl = document.getElementById('giftAdditionalTv');
+        const giftTotalEl = document.getElementById('giftTotal');
+
+        const messageScriptSectionEl = document.getElementById('messageScriptSection');
+        const memoScriptEl = document.getElementById('memoScript');
+        const infoScriptEl = document.getElementById('infoScript');
+        const completeScriptEl = document.getElementById('completeScript');
+
+
+        mobileLinesCountEl.addEventListener('input', updateMobileLinesInputs);
+        calculateButton.addEventListener('click', calculateAndDisplayResults);
+        
+        const allDetailSections = [
+            { radioValue: 'homeBundle', toggleEl: homeBundleDetailsToggleEl, containerEl: homeBundleDetailsContainerEl, updateFn: updateHomeBundleDetails },
+            { radioValue: 'totalAmountBundle', toggleEl: totalAmountDetailsToggleEl, containerEl: totalAmountDetailsContainerEl, updateFn: updateTotalAmountDetails },
+            { radioValue: 'premiumFamilyBundle', toggleEl: premiumFamilyDetailsToggleEl, containerEl: premiumFamilyDetailsContainerEl, updateFn: updatePremiumFamilyDetails },
+            { radioValue: 'premiumSingleBundle', toggleEl: premiumSingleDetailsToggleEl, containerEl: premiumSingleDetailsContainerEl, updateFn: updatePremiumSingleDetails },
+            { radioValue: 'familyBundle', toggleEl: familyBundleDetailsToggleEl, containerEl: familyBundleDetailsContainerEl, updateFn: updateFamilyBundleDetails },
+            { radioValue: 'separateFamilyBundle', toggleEl: separateFamilyDetailsToggleEl, containerEl: separateFamilyDetailsContainerEl, updateFn: updateSeparateFamilyDetails },
+            { radioValue: 'mvnoBundle', toggleEl: mvnoDetailsToggleEl, containerEl: mvnoDetailsContainerEl, updateFn: updateMvnoDetails } 
+        ];
+
+        discountTypeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                allDetailSections.forEach(section => {
+                    if (section.containerEl) {
+                        let isVisible = false;
+                        if (this.value === section.radioValue) { 
+                            if (section.toggleEl) { 
+                                isVisible = section.toggleEl.checked; 
+                                if (isVisible && section.updateFn) {
+                                    section.updateFn();
+                                }
+                            }
+                        } else { 
+                            if(section.toggleEl) section.toggleEl.checked = false; 
+                            isVisible = false; 
+                        }
+                        section.containerEl.classList.toggle('hidden', !isVisible);
+                    }
+                });
+            });
+        });
+        
+        allDetailSections.forEach(section => {
+            if (section.toggleEl) {
+                section.toggleEl.addEventListener('change', function() {
+                    const isSelectedRadio = document.querySelector(`input[name="discountType"][value="${section.radioValue}"]`).checked;
+                    if (isSelectedRadio) { 
+                        section.containerEl.classList.toggle('hidden', !this.checked);
+                        if (this.checked && section.updateFn) {
+                            section.updateFn();
+                        }
+                    }
+                });
+            }
         });
 
-        document.getElementById('calcBtn').addEventListener('click', function() {
-            const internet = parseInt(document.getElementById('internet').value);
-            const tv = parseInt(document.getElementById('tv').value);
-            const total = internet + tv;
-            const discount = tv > 0 ? 5500 : 0; // 홈 결합 할인
-            const final = total - discount;
-            
-            document.getElementById('resultText').innerHTML = `
-                인터넷: ${internet.toLocaleString()}원<br>
-                TV: ${tv.toLocaleString()}원<br>
-                결합 할인: -${discount.toLocaleString()}원<br>
-                <strong>총 월 요금: ${final.toLocaleString()}원</strong>
-            `;
-            document.getElementById('result').classList.remove('hidden');
+
+        tvPlanEl.addEventListener('change', () => { 
+            if (tvPlanEl.value === 'none') {
+                tvStbEl.value = 'none';
+                additionalTvPlanEl.value = 'none'; 
+            } else if (tvStbEl.value === 'none' && tvPlanEl.value !== 'none') { 
+                 tvStbEl.value = 'UHD';
+            }
         });
+
+        additionalTvPlanEl.addEventListener('change', () => {
+            if (tvPlanEl.value === 'none' && additionalTvPlanEl.value !== 'none') {
+                alert('첫 번째 TV를 먼저 선택해주세요.');
+                additionalTvPlanEl.value = 'none';
+            }
+        });
+
+
+        function updateMobileLinesInputs() {
+            const count = parseInt(mobileLinesCountEl.value) || 0;
+            mobileLinesContainerEl.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const div = document.createElement('div');
+                div.className = 'mobile-line-item grid grid-cols-1 md:grid-cols-2 gap-4 items-center';
+                div.innerHTML = `
+                    <div>
+                        <label for="mobileCost${i}" class="block text-sm font-medium text-slate-600">회선 ${i + 1} 월정액 (VAT포함, 할인 전)</label>
+                        <input type="number" id="mobileCost${i}" class="input-field mt-1" placeholder="예: 80000" value="0">
+                    </div>
+                    <div>
+                        <label class="flex items-center mt-1 md:mt-5">
+                            <input type="checkbox" id="mobileHighTier${i}" class="radio-input h-4 w-4">
+                            <span class="ml-2 text-sm text-slate-600">월 7.7만원 이상 5G/LTE (프리미엄 가족/싱글결합용)</span>
+                        </label>
+                    </div>
+                `;
+                mobileLinesContainerEl.appendChild(div);
+            }
+        }
+        
+        function getSelectedInternetInfo(planName) {
+            if (!planName || planName === 'none' || !internetPlans[planName]) return { basePrice: 0, modemFee: 0, type: "none", speed: 0 };
+            return internetPlans[planName];
+        }
+        
+        function updateHomeBundleDetails() {
+            let internetDiscount = 0;
+             if (internetPlanEl.value !== 'none' && (tvPlanEl.value !== 'none' || phonePlanEl.value !== 'none')) {
+                internetDiscount = simpleHomeBundleInternetDiscount;
+             }
+            if (detailHbInternetDiscountEl) detailHbInternetDiscountEl.textContent = internetDiscount.toLocaleString();
+        }
+
+        function updateTotalAmountDetails() {
+            const internetPlanName = internetPlanEl.value;
+            const numMobileLines = parseInt(mobileLinesCountEl.value) || 0;
+            let totalMobileBaseCost = 0;
+            for (let i = 0; i < numMobileLines; i++) {
+                totalMobileBaseCost += parseInt(document.getElementById(`mobileCost${i}`).value) || 0;
+            }
+            
+            let detailInternetD = 0;
+            let detailMobileD = 0;
+            let detailTotalD = 0;
+
+            if (internetPlanName !== 'none') {
+                const currentInternet = getSelectedInternetInfo(internetPlanName);
+                const internetTypeKey = currentInternet.type;
+                if (internetTypeKey && totalAmountDiscountsTable[internetTypeKey]) {
+                    for (const tier of totalAmountDiscountsTable[internetTypeKey]) {
+                        if (totalMobileBaseCost >= tier.mobileTotalMin && totalMobileBaseCost <= tier.mobileTotalMax) {
+                            detailInternetD = tier.internetDiscount;
+                            detailMobileD = tier.mobileDiscountInternal;
+                            detailTotalD = tier.totalDiscount; 
+                            break;
+                        }
+                    }
+                }
+            }
+            detailInternetDiscountEl.textContent = detailInternetD.toLocaleString();
+            detailMobileDiscountEl.textContent = detailMobileD.toLocaleString();
+            detailTotalDiscountEl.textContent = detailTotalD.toLocaleString();
+        }
+        
+        function updatePremiumFamilyDetails() {
+            const internetDiscount = premiumFamilyConfig.internetDiscount;
+            detailPfInternetDiscountEl.textContent = internetDiscount.toLocaleString();
+        }
+
+        function updatePremiumSingleDetails() {
+            const internetPlanName = internetPlanEl.value;
+            const tvPlanName = tvPlanEl.value;
+            const phonePlanName = phonePlanEl.value;
+            const isInternetOnlyBundle = (tvPlanName === 'none' && phonePlanName === 'none');
+            let internetDiscount = 0;
+            if (internetPlanName !== 'none') {
+                const currentInternet = getSelectedInternetInfo(internetPlanName);
+                 if (currentInternet.speed >= premiumSingleConfig.minInternetSpeedForDiscount && isInternetOnlyBundle) { 
+                    const numMobileLines = parseInt(mobileLinesCountEl.value) || 0;
+                    if (numMobileLines === 1) {
+                        const mobileCost = parseInt(document.getElementById('mobileCost0').value) || 0;
+                        const isHighTier = document.getElementById('mobileHighTier0').checked;
+                        if (isHighTier && mobileCost >= premiumSingleConfig.minMobileFeeForDiscount) {
+                           internetDiscount = premiumSingleConfig.internetDiscountIfStandalone;
+                        }
+                    }
+                }
+            }
+            detailPsInternetDiscountEl.textContent = internetDiscount.toLocaleString();
+        }
+
+        function updateFamilyBundleDetails() {
+            const internetPlanName = internetPlanEl.value;
+            let internetDiscount = 0;
+            if (internetPlanName !== 'none') {
+                const currentInternet = getSelectedInternetInfo(internetPlanName);
+                const internetTypeKey = currentInternet.type;
+                if (familyBundleConfig.internetDiscount[internetTypeKey]) {
+                    internetDiscount = familyBundleConfig.internetDiscount[internetTypeKey];
+                }
+            }
+            detailFbInternetDiscountEl.textContent = internetDiscount.toLocaleString();
+        }
+        
+        function updateSeparateFamilyDetails() {
+            const internetPlanName = internetPlanEl.value;
+            let internetDiscount = 0;
+            let tvDiscountRef = 0;
+            if (internetPlanName !== 'none') {
+                const currentInternet = getSelectedInternetInfo(internetPlanName);
+                const speed = currentInternet.speed;
+                if (speed === 100) {
+                    internetDiscount = separateFamilyBundleConfig.internetDiscount["100M"];
+                    tvDiscountRef = separateFamilyBundleConfig.tvDiscountReference["100M"];
+                } else if (speed === 500) {
+                    internetDiscount = separateFamilyBundleConfig.internetDiscount["500M_1G"]; 
+                    tvDiscountRef = separateFamilyBundleConfig.tvDiscountReference["500M_1G"];
+                } else if (speed >= 1000) { 
+                    internetDiscount = separateFamilyBundleConfig.internetDiscount["1000"];
+                    tvDiscountRef = separateFamilyBundleConfig.tvDiscountReference["1000"];
+                }
+            }
+            detailSfInternetDiscountEl.textContent = internetDiscount.toLocaleString();
+            detailSfTvDiscountEl.textContent = tvDiscountRef.toLocaleString();
+        }
+
+        function updateMvnoDetails() {
+            const internetPlanName = internetPlanEl.value;
+            let internetDiscount = 0;
+            if (internetPlanName !== 'none') {
+                const currentInternet = getSelectedInternetInfo(internetPlanName);
+                const internetTypeKey = currentInternet.type;
+                if (mvnoBundleConfig.internetDiscount[internetTypeKey]) {
+                    internetDiscount = mvnoBundleConfig.internetDiscount[internetTypeKey];
+                }
+            }
+            detailMvnoInternetDiscountEl.textContent = internetDiscount.toLocaleString();
+        }
+
+
+        function calculateAndDisplayResults() {
+            const internetPlanName = internetPlanEl.value;
+            const wantsWifiRouter = wifiRouterRentalEl.checked;
+            const tvPlanName = tvPlanEl.value;
+            const tvStbName = tvStbEl.value;
+            const additionalTvPlanKey = additionalTvPlanEl.value;
+            const phonePlanName = phonePlanEl.value;
+            const numMobileLines = parseInt(mobileLinesCountEl.value) || 0;
+            const discountType = document.querySelector('input[name="discountType"]:checked').value;
+            const installationTime = document.querySelector('input[name="installationTime"]:checked').value;
+
+            let mobileLinesData = [];
+            let totalMobileBaseCost = 0;
+            let highTierMobileLinesCount = 0;
+            
+            for (let i = 0; i < numMobileLines; i++) {
+                const cost = parseInt(document.getElementById(`mobileCost${i}`).value) || 0;
+                const isHighTier = document.getElementById(`mobileHighTier${i}`).checked;
+                mobileLinesData.push({ cost: cost, isHighTier: isHighTier });
+                totalMobileBaseCost += cost;
+                if (isHighTier) {
+                    highTierMobileLinesCount++;
+                }
+            }
+
+            let currentInternet = getSelectedInternetInfo(internetPlanName);
+            let internetBase = currentInternet.basePrice;
+            let modemRental = currentInternet.modemFee; 
+            let internetDiscount = 0;
+            let actualWifiRouterFee = 0;
+            
+            let tvBase = 0;
+            let currentTvDiscount = 0; 
+            let stbRental = 0;
+            let phoneBase = 0;
+            let phoneDiscount = 0; 
+            let additionalTvCost = 0;
+
+            if (wantsWifiRouter && internetPlanName !== 'none') {
+                if (currentInternet.speed >= 1000) { 
+                    actualWifiRouterFee = 0;
+                } else {
+                    actualWifiRouterFee = wifiRouterBaseFee;
+                }
+            }
+            
+            const isInternetOnlyBundle = (tvPlanName === 'none' && phonePlanName === 'none' && additionalTvPlanKey === 'none');
+
+            if (internetPlanName !== 'none') {
+                if (discountType === 'homeBundle') {
+                     if (!isInternetOnlyBundle) { 
+                        internetDiscount = simpleHomeBundleInternetDiscount;
+                     }
+                } else if (discountType === 'totalAmountBundle') {
+                    const internetTypeKey = currentInternet.type; 
+                    if (internetTypeKey && totalAmountDiscountsTable[internetTypeKey]) {
+                        for (const tier of totalAmountDiscountsTable[internetTypeKey]) {
+                            if (totalMobileBaseCost >= tier.mobileTotalMin && totalMobileBaseCost <= tier.mobileTotalMax) {
+                                internetDiscount = tier.internetDiscount; 
+                                break;
+                            }
+                        }
+                    }
+                } else if (discountType === 'premiumFamilyBundle') {
+                    if (highTierMobileLinesCount >= premiumFamilyConfig.minHighTierLinesForPremiumFamily) {
+                        internetDiscount = premiumFamilyConfig.internetDiscount;
+                    }
+                } else if (discountType === 'premiumSingleBundle') {
+                    if (currentInternet.speed >= premiumSingleConfig.minInternetSpeedForDiscount && 
+                        numMobileLines === 1 && 
+                        mobileLinesData[0].isHighTier && 
+                        mobileLinesData[0].cost >= premiumSingleConfig.minMobileFeeForDiscount) {
+                        if (isInternetOnlyBundle) { 
+                           internetDiscount = premiumSingleConfig.internetDiscountIfStandalone;
+                        } else {
+                           internetDiscount = 0; 
+                        }
+                    }
+                } else if (discountType === 'mvnoBundle') {
+                    const internetTypeKey = currentInternet.type;
+                    if (mvnoBundleConfig.internetDiscount[internetTypeKey]) {
+                        internetDiscount = mvnoBundleConfig.internetDiscount[internetTypeKey];
+                    }
+                } else if (discountType === 'familyBundle') { 
+                    const internetTypeKey = currentInternet.type;
+                    if (familyBundleConfig.internetDiscount[internetTypeKey]) {
+                        internetDiscount = familyBundleConfig.internetDiscount[internetTypeKey];
+                    }
+                } else if (discountType === 'separateFamilyBundle') {
+                    const speed = currentInternet.speed;
+                    if (speed === 100) {
+                        internetDiscount = separateFamilyBundleConfig.internetDiscount["100M"];
+                        if (tvPlanName !== 'none') currentTvDiscount = separateFamilyBundleConfig.tvDiscountReference["100M"];
+                    } else if (speed === 500) {
+                        internetDiscount = separateFamilyBundleConfig.internetDiscount["500M_1G"];
+                        if (tvPlanName !== 'none') currentTvDiscount = separateFamilyBundleConfig.tvDiscountReference["500M_1G"];
+                    } else if (speed >= 1000) {
+                        internetDiscount = separateFamilyBundleConfig.internetDiscount["1000"];
+                         if (tvPlanName !== 'none') currentTvDiscount = separateFamilyBundleConfig.tvDiscountReference["1000"];
+                    }
+                }
+            }
+            
+            allDetailSections.forEach(section => {
+                if (document.querySelector(`input[name="discountType"][value="${section.radioValue}"]`).checked && section.toggleEl && section.toggleEl.checked && section.updateFn) {
+                    section.updateFn();
+                }
+            });
+            
+            internetDiscount = Math.min(internetDiscount, internetBase);
+            const finalInternetComponentCost = internetBase - internetDiscount + modemRental + actualWifiRouterFee;
+
+            let finalTvComponentCost = 0;
+            if (tvPlanName !== 'none') {
+                const currentTvPlan = tvPlans[tvPlanName] || { basePrice: 0 };
+                const currentStb = tvStbs[tvStbName] || { rentalFee: 0 };
+                tvBase = currentTvPlan.basePrice;
+                stbRental = currentStb.rentalFee;
+                currentTvDiscount = Math.min(currentTvDiscount, tvBase); 
+                finalTvComponentCost = tvBase - currentTvDiscount + stbRental;
+            }
+            
+            if (additionalTvPlanKey !== 'none' && additionalTvPlans[additionalTvPlanKey]) {
+                 additionalTvCost = additionalTvPlans[additionalTvPlanKey].basePrice;
+            }
+
+
+            let finalPhoneComponentCost = 0;
+            if (phonePlanName !== 'none') {
+                const currentPhonePlan = phonePlans[phonePlanName] || { basePrice: 0 };
+                phoneBase = currentPhonePlan.basePrice;
+                finalPhoneComponentCost = phoneBase - phoneDiscount; 
+            }
+            
+            const finalMonthlyDisplayCost = finalInternetComponentCost + finalTvComponentCost + additionalTvCost + finalPhoneComponentCost;
+
+            // Update UI
+            totalBaseInternetCostEl.textContent = internetBase.toLocaleString();
+            totalInternetDiscountAmountEl.textContent = internetDiscount.toLocaleString();
+            internetModemRentalEl.textContent = modemRental.toLocaleString();
+            wifiRouterRentalCostDisplayEl.textContent = actualWifiRouterFee.toLocaleString();
+
+            if (tvPlanName !== 'none') {
+                tvCostSummaryContainerEl.classList.remove('hidden');
+                tvBaseCostDisplayEl.textContent = tvBase.toLocaleString();
+                tvDiscountDisplayEl.textContent = currentTvDiscount.toLocaleString();
+                stbRentalCostDisplayEl.textContent = stbRental.toLocaleString();
+            } else {
+                tvCostSummaryContainerEl.classList.add('hidden');
+            }
+            
+            if (additionalTvPlanKey !== 'none') {
+                additionalTvCostSummaryContainerEl.classList.remove('hidden');
+                additionalTvCostDisplayEl.textContent = additionalTvCost.toLocaleString();
+            } else {
+                additionalTvCostSummaryContainerEl.classList.add('hidden');
+            }
+
+            if (phonePlanName !== 'none') {
+                phoneCostSummaryContainerEl.classList.remove('hidden');
+                phoneBaseCostDisplayEl.textContent = phoneBase.toLocaleString();
+                phoneDiscountDisplayEl.textContent = phoneDiscount.toLocaleString();
+            } else {
+                phoneCostSummaryContainerEl.classList.add('hidden');
+            }
+            
+            finalMonthlyCostEl.textContent = finalMonthlyDisplayCost.toLocaleString();
+            finalCostLabelEl.textContent = "최종 예상 월 납부액";
+
+
+            let calculatedInstallationFee = 0;
+            const hasInternet = internetPlanName !== 'none';
+            const hasTv = tvPlanName !== 'none';
+            const hasAdditionalTv = additionalTvPlanKey !== 'none';
+            const hasPhone = phonePlanName !== 'none';
+
+            if (hasInternet && hasTv && hasAdditionalTv) { 
+                calculatedInstallationFee = installationFees.internet_tv_addTv[installationTime];
+            } else if (hasInternet && hasTv && hasPhone) { 
+                calculatedInstallationFee = installationFees.internet_tv_phone[installationTime];
+            } else if (hasInternet && hasTv) { 
+                calculatedInstallationFee = installationFees.internet_tv[installationTime];
+            } else if (hasInternet && hasPhone) { 
+                calculatedInstallationFee = installationFees.internet_phone[installationTime];
+            } else if (hasTv && hasPhone) {  
+                calculatedInstallationFee = (installationFees.tv_only[installationTime] || 0) + (installationFees.phone_only[installationTime] || 0);
+            } else if (hasInternet) { 
+                calculatedInstallationFee = installationFees.internet_only[installationTime];
+            } else if (hasTv) { 
+                calculatedInstallationFee = installationFees.tv_only[installationTime];
+            } else if (hasPhone) { 
+                calculatedInstallationFee = installationFees.phone_only[installationTime];
+            }
+
+
+            selectedInternetEl.textContent = internetPlanName !== 'none' ? internetPlanName : '미선택';
+            selectedTvEl.textContent = tvPlanName !== 'none' ? tvPlanName : '미선택';
+            selectedStbEl.textContent = (tvPlanName !== 'none' && tvStbName !== 'none') ? tvStbEl.options[tvStbEl.selectedIndex].text.split(' (')[0] : '미선택';
+            selectedAdditionalTvEl.textContent = additionalTvPlanKey !== 'none' ? additionalTvPlans[additionalTvPlanKey].name : '미선택';
+            selectedPhoneEl.textContent = phonePlanName !== 'none' ? phonePlanName : '미선택';
+            selectedMobileCountEl.textContent = numMobileLines;
+            
+            const discountTypeMap = {
+                homeBundle: "홈 결합 (유선 간)",
+                totalAmountBundle: "총액 결합할인",
+                premiumFamilyBundle: "프리미엄 가족결합",
+                premiumSingleBundle: "프리미엄 싱글결합",
+                mvnoBundle: "알뜰폰 결합",
+                familyBundle: "패밀리 결합 (인터넷 추가회선)",
+                separateFamilyBundle: "따로 살아도 가족결합"
+            };
+            selectedDiscountTypeEl.textContent = discountTypeMap[discountType];
+            installationCostResultEl.textContent = calculatedInstallationFee.toLocaleString();
+
+            // 사은품 계산
+            let giftCash = 0;
+            let giftVoucher = 0;
+            let giftPhoneVoucherAmount = 0;
+            let giftAdditionalTvAmount = 0;
+
+            if (internetPlanName !== 'none') {
+                const internetSpeed = currentInternet.speed;
+                let tvCategoryForGift = "베이직"; 
+                let giftKeyPrefix = "";
+
+                if (tvPlanName === 'none') { // 인터넷 단독
+                    if (internetSpeed === 100) giftKeyPrefix = "100단독";
+                    else if (internetSpeed === 500) giftKeyPrefix = "500단독";
+                    else if (internetSpeed >= 1000) giftKeyPrefix = "1G단독";
+                } else { // 인터넷 + TV 번들 (첫번째 TV 기준)
+                    tvCategoryForGift = tvPlanEl.options[tvPlanEl.selectedIndex].dataset.category || "베이직";
+                    if (internetSpeed === 100) giftKeyPrefix = "100번들";
+                    else if (internetSpeed === 500) giftKeyPrefix = "500번들";
+                    else if (internetSpeed >= 1000) giftKeyPrefix = "기가번들";
+                }
+                
+                if (giftTable[tvCategoryForGift] && giftTable[tvCategoryForGift][giftKeyPrefix]) {
+                    giftCash = giftTable[tvCategoryForGift][giftKeyPrefix].cash;
+                    giftVoucher = giftTable[tvCategoryForGift][giftKeyPrefix].voucher;
+                }
+            }
+
+            if (phonePlanName !== 'none') {
+                giftPhoneVoucherAmount = 20000;
+            }
+            if (additionalTvPlanKey !== 'none') {
+                giftAdditionalTvAmount = 30000; // 추가 TV 선택 시 3만원 현금 사은품
+            }
+
+
+            giftCashEl.textContent = giftCash.toLocaleString();
+            giftVoucherEl.textContent = giftVoucher.toLocaleString();
+            giftPhoneVoucherEl.textContent = giftPhoneVoucherAmount.toLocaleString();
+            giftAdditionalTvEl.textContent = giftAdditionalTvAmount.toLocaleString();
+            giftTotalEl.textContent = (giftCash + giftVoucher + giftPhoneVoucherAmount + giftAdditionalTvAmount).toLocaleString();
+            
+            resultSection.classList.remove('hidden');
+            messageScriptSectionEl.classList.remove('hidden');
+            generateMessageScripts();
+        }
+
+        function generateMessageScripts() {
+            const internetPlanText = internetPlanEl.options[internetPlanEl.selectedIndex].text.split(' (')[0];
+            let firstTvText = "미선택";
+            let firstStbText = "미선택";
+            if (tvPlanEl.value !== 'none') {
+                firstTvText = tvPlanEl.options[tvPlanEl.selectedIndex].text.split(' (')[0];
+                if (tvStbEl.value !== 'none') {
+                    firstStbText = tvStbEl.options[tvStbEl.selectedIndex].text.split(' (')[0];
+                }
+            }
+            
+            const additionalTvPlanKey = additionalTvPlanEl.value;
+            const additionalTvText = additionalTvPlanKey !== 'none' ? ` + (추가) ${additionalTvPlans[additionalTvPlanKey].name}` : "";
+
+            const monthlyFee = finalMonthlyCostEl.textContent;
+            const giftAmount = giftTotalEl.textContent;
+            const installFee = installationCostResultEl.textContent;
+            const installTime = document.querySelector('input[name="installationTime"]:checked').value;
+            
+            let installFeeForWeekendMessage = "";
+            const hasInternet = internetPlanEl.value !== 'none';
+            const hasTv = tvPlanEl.value !== 'none';
+            const hasAdditionalTv = additionalTvPlanKey !== 'none';
+
+            if (hasInternet && hasTv && hasAdditionalTv && installationFees.internet_tv_addTv) {
+                 installFeeForWeekendMessage = installationFees.internet_tv_addTv.weekend.toLocaleString();
+            } else if (hasInternet && hasTv && installationFees.internet_tv) {
+                 installFeeForWeekendMessage = installationFees.internet_tv.weekend.toLocaleString();
+            } else if (hasInternet && installationFees.internet_only) {
+                 installFeeForWeekendMessage = installationFees.internet_only.weekend.toLocaleString();
+            }
+             else {
+                installFeeForWeekendMessage = "별도 문의";
+            }
+
+
+            let productDescriptionMemo = internetPlanText;
+            if (firstTvText !== "미선택") productDescriptionMemo += ` + ${firstTvText}`;
+            if (firstStbText !== "미선택") productDescriptionMemo += ` + ${firstStbText}`;
+            productDescriptionMemo += additionalTvText;
+
+            memoScriptEl.value = `1. 상품 : ${productDescriptionMemo}
+2. 요금 : ${monthlyFee}원
+3. 사은품 : ${giftAmount}원
+4. 설치비 : ${installFee}원
+5. 기타 : 이사 여부 [  ] / 희망설치일자 [    년   월   일]`;
+            
+            let productDescriptionInfo = `▶️ ${internetPlanText}`;
+            if (firstTvText !== "미선택") productDescriptionInfo += `\n▶️ ${firstTvText}`;
+            if (firstStbText !== "미선택" && firstTvText !== "미선택") productDescriptionInfo += ` + ${firstStbText}`;
+            if(additionalTvText) productDescriptionInfo += `\n▶️ (추가) ${additionalTvPlans[additionalTvPlanKey].name}`;
+
+
+            infoScriptEl.value = `[미소] 상품 & 사은품 요약 안내
+안녕하세요, 미소 인터넷 입니다.
+고객님께서 오늘 상담 받으신 상품 안내드립니다.
+${productDescriptionInfo}
+▶️ 월 ${monthlyFee}원 (결합 O)
+▶️ 사은품 ${giftAmount}원
+* 혜택은 실시간으로 바뀔 수 있다는 점 안내드립니다.
+* 3년 약정 기준
+미소 드림.`;
+            
+            let productDescriptionComplete = `▶️ ${internetPlanText}`;
+            if (firstTvText !== "미선택") productDescriptionComplete += `\n▶️ ${firstTvText}`;
+            if (firstStbText !== "미선택" && firstTvText !== "미선택") productDescriptionComplete += ` + ${firstStbText} 셋톱 임대 포함`;
+            if(additionalTvText) productDescriptionComplete += `\n▶️ (추가) ${additionalTvPlans[additionalTvPlanKey].name}`;
+
+
+            completeScriptEl.value = `[미소] 가입 완료 안내
+안녕하세요, 고객님.
+미소 인터넷 부서입니다.
+✅ 계약이 완료되었어요, 아래 내용은 계약서와 동일한 효력이 있으니 꼼꼼히 읽어주세요.
+⚠️ 3년 약정이며, 아래와 같은 상황에 해당하면 받으셨던 사은품은 환수 됩니다.
+① 1년 이내 해지
+② 3개월 (90일) 이상 정지
+③ 1년 이내 요금제 하향 (상향 시에는 환수 되지 않습니다!)
+④ 3개월 이내 명의변경
+⑤ 개통 1개월 이내 결제수단 지로청구서로 변경
+⚠️ 신규 가입 후 기존에 인터넷은 꼭 해지 해주세요. 자동해지되지 않으며 이럴 경우 요금이 이중 부과되어요.
+⚠️ 3년 이내 해지 시 통신사 본사에 위약금 (할인 반환금) 및 통신사에 따라 면제된 와이파이 / 통신기기 설치비 반환이 필요할 수 있어요.
+✅ 가입 상품 안내
+${productDescriptionComplete}
+▶️ 월 ${monthlyFee}원 (결합 O)
+▶️ 설치비 ${installFee}원 첫 달 부과 ${installTime === 'weekday' ? '' : `(주말/야간 설치 시 ${installFeeForWeekendMessage}원)`}
+▶️ 사은품 ${giftAmount}원
+✅사은품은 설치 후 7일 이내 자동으로 지급되나 평일기준 5시 이전 개통 받았다고 문자 주시면 당일입금 도움드리겠습니다.
+${installTime !== 'weekday' ? `-> 주말/야간 설치비는 ${installFeeForWeekendMessage}원 이십니다.` : ''}
+🔊 해당 연락처로 연락이 어려울 경우 걱정하지 마세요! 아래 대표번호로 문의주시면 확인하여 연락드리겠습니다. 시간 양해 부탁드려요.
+[미소를 소개해주세요]
+지인이 미소에서 인터넷 설치하면 소개해주신 분에게 3만원 드려요.
+▶ 지인에게 추천하고 3O,OOO원 받기 (↓)
+https://get.miso.kr/pZbfsUPthzb
+미소 드림.`;
+        }
+
+        function copyToClipboard(elementId, feedbackElementId) {
+            const textarea = document.getElementById(elementId);
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); 
+            try {
+                document.execCommand('copy');
+                const feedbackEl = document.getElementById(feedbackElementId);
+                feedbackEl.textContent = '복사되었습니다!';
+                setTimeout(() => { feedbackEl.textContent = ''; }, 2000);
+            } catch (err) {
+                const feedbackEl = document.getElementById(feedbackElementId);
+                feedbackEl.textContent = '복사 실패';
+                 setTimeout(() => { feedbackEl.textContent = ''; }, 2000);
+            }
+            window.getSelection().removeAllRanges(); 
+        }
+        
+        updateMobileLinesInputs();
+        allDetailSections.forEach(section => {
+            if (section.containerEl) {
+                const isSelected = document.querySelector(`input[name="discountType"][value="${section.radioValue}"]`).checked;
+                let shouldBeVisible = false; 
+                if (isSelected) { 
+                    if (section.toggleEl) {
+                        shouldBeVisible = section.toggleEl.checked;
+                    }
+                } else { 
+                     if (section.toggleEl) {
+                        section.toggleEl.checked = false;
+                     }
+                }
+                section.containerEl.classList.toggle('hidden', !shouldBeVisible);
+                if (shouldBeVisible && section.updateFn) { 
+                    section.updateFn();
+                }
+            }
+        });
+
     </script>
 </body>
 </html>
