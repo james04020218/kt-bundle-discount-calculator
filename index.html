@@ -8,15 +8,14 @@
     <!-- Application Structure Plan: 
         Single-page interactive calculator for KT.
         1. Header: Title.
-        2. Input Section: Service Selection (Internet, TV, Additional TV, Mobile, Phone, WiFi Router), Dongpan USIM Checkbox, Discount Type (each with toggle for details), Display Mode (Pre/Post bundle calc), Installation.
+        2. Input Section: Service Selection, Dongpan USIM Checkbox, Discount Type (each with toggle for details), Display Mode (Pre/Post bundle calc), Installation.
         3. Action Button: "계산하기".
-        4. Output Section: Summary, Detailed cost breakdown, Installation cost, Gift/Benefit section.
+        4. Output Section: Summary, Detailed cost breakdown, Installation cost, Gift/Benefit section (includes base gift and detailed additional Dongpan USIM gift based on multiple lines if TV is bundled).
         5. Footer: Disclaimers.
-        This version updates default STB, adds a KT auth link for general internet application, and highlights an existing link.
+        This version implements detailed Dongpan USIM gift calculation logic.
     -->
     <!-- Visualization & Content Choices:
-        - Default STB: Changed to "셋톱박스 A".
-        - Dongpan USIM Info: Added new KT auth link for general internet application. Highlighted existing application link.
+        - Dongpan USIM Gift Logic: Updated to handle single line for "Internet Only" and up to 3 lines for "Internet+TV" bundle, based on mobile fee tiers.
         - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
     -->
     <style>
@@ -626,8 +625,6 @@
         const discountTypeRadios = document.querySelectorAll('input[name="discountType"]');
         const displayModeKtRadios = document.querySelectorAll('input[name="displayModeKt"]');
         
-        // Removed homeBundleDetailsToggleEl, homeBundleDetailsContainerEl, detailHbInternetDiscountEl as they are no longer in HTML
-
         const totalAmountDetailsToggleEl = document.getElementById('totalAmountDetailsToggle');
         const totalAmountDetailsContainerEl = document.getElementById('totalAmountDetailsContainer');
         const detailInternetDiscountEl = document.getElementById('detailInternetDiscount');
@@ -766,7 +763,7 @@
                 tvStbEl.value = 'none';
                 additionalTvPlanEl.value = 'none'; 
             } else if (tvStbEl.value === 'none' && tvPlanEl.value !== 'none') { 
-                 tvStbEl.value = '셋톱박스 A'; // Default STB for 1st TV
+                 tvStbEl.value = '셋톱박스 A'; 
             }
         });
 
@@ -805,7 +802,7 @@
             return internetPlans[planName];
         }
         
-        // updateHomeBundleDetails is removed as the homeBundle radio is removed. Its logic is now part of the main calculation.
+        // updateHomeBundleDetails is removed as homeBundle radio is removed.
 
         function updateTotalAmountDetails() {
             const internetPlanName = internetPlanEl.value;
@@ -942,8 +939,10 @@
             let highTierMobileLinesCount = 0;
             
             for (let i = 0; i < numMobileLines; i++) {
-                const cost = parseInt(document.getElementById(`mobileCost${i}`).value) || 0;
-                const isHighTier = document.getElementById(`mobileHighTier${i}`).checked;
+                const costInput = document.getElementById(`mobileCost${i}`);
+                const highTierInput = document.getElementById(`mobileHighTier${i}`);
+                const cost = costInput ? (parseInt(costInput.value) || 0) : 0;
+                const isHighTier = highTierInput ? highTierInput.checked : false;
                 mobileLinesData.push({ cost: cost, isHighTier: isHighTier });
                 totalMobileBaseCost += cost;
                 if (isHighTier) {
@@ -986,7 +985,7 @@
                 currentTvDiscount = 0; 
                 autoHomeDiscountVal = 0; 
             } else if (internetPlanName !== 'none') {
-                if (discountType === 'totalAmountBundle') {
+                 if (discountType === 'totalAmountBundle') {
                     const internetTypeKey = currentInternet.type; 
                     if (numMobileLines > 0 && totalMobileBaseCost > 0 && internetTypeKey && totalAmountDiscountsTable[internetTypeKey]) {
                         for (const tier of totalAmountDiscountsTable[internetTypeKey]) {
@@ -1157,7 +1156,7 @@
             
             const discountTypeMap = {
                 none: "결합 할인 없음",
-                homeBundle: "홈 결합 (유선 간)", 
+                // homeBundle: "홈 결합 (유선 간)", 
                 totalAmountBundle: "총액 결합할인",
                 premiumFamilyBundle: "프리미엄 가족결합",
                 premiumSingleBundle: "프리미엄 싱글결합",
@@ -1168,6 +1167,7 @@
             selectedDiscountTypeEl.textContent = discountTypeMap[discountType] || "알 수 없음";
             installationCostResultEl.textContent = calculatedInstallationFee.toLocaleString();
 
+            // 사은품 계산
             let giftCash = 0;
             let giftVoucher = 0;
             let giftPhoneVoucherAmount = 0;
@@ -1198,23 +1198,40 @@
                 }
 
                 if (isDongpanChecked && numMobileLines > 0) {
-                    const firstMobileLineFee = parseInt(document.getElementById('mobileCost0').value) || 0;
-                    let mobileFeeTierKey = null;
-                    if (firstMobileLineFee >= 37000 && firstMobileLineFee <= 58000) mobileFeeTierKey = "37K";
-                    else if (firstMobileLineFee >= 61000 && firstMobileLineFee <= 89000) mobileFeeTierKey = "61K";
-                    else if (firstMobileLineFee >= 90000 && firstMobileLineFee <= 110000) mobileFeeTierKey = "90K";
+                    const isTvBundledForDongpan = tvPlanName !== 'none';
+                    const dongpanBundleType = isTvBundledForDongpan ? "TV번들" : "단독";
+                    let internetGiftKeyPart = "";
+                    if (internetSpeed === 100) internetGiftKeyPart = "100M";
+                    else if (internetSpeed === 500) internetGiftKeyPart = "500M";
+                    else if (internetSpeed >= 1000) internetGiftKeyPart = "1G";
 
-                    if (mobileFeeTierKey) {
-                        let dongpanInternetKey = "";
-                        if (internetSpeed === 100) dongpanInternetKey = "100M";
-                        else if (internetSpeed === 500) dongpanInternetKey = "500M";
-                        else if (internetSpeed >= 1000) dongpanInternetKey = "1G"; 
+                    if (dongpanBundleType === "단독") { // 인터넷 단독 + 유심동판: 첫 번째 회선만 적용
+                        const firstMobileLineFee = (document.getElementById('mobileCost0') ? parseInt(document.getElementById('mobileCost0').value) || 0 : 0);
+                        let mobileFeeTierKey = null;
+                        if (firstMobileLineFee >= 37000 && firstMobileLineFee <= 58000) mobileFeeTierKey = "37K";
+                        else if (firstMobileLineFee >= 61000 && firstMobileLineFee <= 89000) mobileFeeTierKey = "61K";
+                        else if (firstMobileLineFee >= 90000 && firstMobileLineFee <= 110000) mobileFeeTierKey = "90K";
 
-                        if (dongpanInternetKey) {
-                            const dongpanBundleType = isTvSelectedForGift ? "TV번들" : "단독";
-                            const dongpanGiftData = dongpanAdditionalGiftTable_KT[mobileFeeTierKey];
-                            if (dongpanGiftData && dongpanGiftData[dongpanInternetKey + "_" + dongpanBundleType]) {
-                                giftDongpanAdditionalCashAmount = dongpanGiftData[dongpanInternetKey + "_" + dongpanBundleType];
+                        if (mobileFeeTierKey && internetGiftKeyPart) {
+                            const giftKey = internetGiftKeyPart + "_" + dongpanBundleType;
+                            if (dongpanAdditionalGiftTable_KT[mobileFeeTierKey] && dongpanAdditionalGiftTable_KT[mobileFeeTierKey][giftKey]) {
+                                giftDongpanAdditionalCashAmount = dongpanAdditionalGiftTable_KT[mobileFeeTierKey][giftKey];
+                            }
+                        }
+                    } else { // 인터넷 + TV + 유심동판: 최대 3회선까지 각 회선별 사은품 합산
+                        for (let i = 0; i < Math.min(numMobileLines, 3); i++) {
+                            const mobileLineFeeInput = document.getElementById(`mobileCost${i}`);
+                            const mobileLineFee = mobileLineFeeInput ? (parseInt(mobileLineFeeInput.value) || 0) : 0;
+                            let mobileFeeTierKey = null;
+                            if (mobileLineFee >= 37000 && mobileLineFee <= 58000) mobileFeeTierKey = "37K";
+                            else if (mobileLineFee >= 61000 && mobileLineFee <= 89000) mobileFeeTierKey = "61K";
+                            else if (mobileLineFee >= 90000 && mobileLineFee <= 110000) mobileFeeTierKey = "90K";
+
+                            if (mobileFeeTierKey && internetGiftKeyPart) {
+                                const giftKey = internetGiftKeyPart + "_" + dongpanBundleType;
+                                if (dongpanAdditionalGiftTable_KT[mobileFeeTierKey] && dongpanAdditionalGiftTable_KT[mobileFeeTierKey][giftKey]) {
+                                    giftDongpanAdditionalCashAmount += dongpanAdditionalGiftTable_KT[mobileFeeTierKey][giftKey];
+                                }
                             }
                         }
                     }
@@ -1380,7 +1397,7 @@ https://get.miso.kr/pZbfsUPthzb
         function setInitialDefaults() {
             internetPlanEl.value = "인터넷 슬림"; 
             tvPlanEl.value = "지니 TV 베이직"; 
-            tvStbEl.value = "셋톱박스 A"; // 기본값 변경
+            tvStbEl.value = "셋톱박스 A"; 
             additionalTvPlanEl.value = "none"; 
             phonePlanEl.value = "none"; 
             wifiRouterRentalEl.checked = false;
