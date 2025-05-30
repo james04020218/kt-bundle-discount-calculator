@@ -8,7 +8,8 @@
     <!-- Application Structure Plan: 
         Single-page interactive calculator for KT.
         Updates:
-        1. Updated the text content for the "Sensitive Information Link" script.
+        1. Restored/Corrected the getMobileTierKeyFor500MUp function definition.
+        2. Ensured correct function calls in calculateAndDisplayResults for mobile tier key generation.
     -->
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; /* slate-50 */ }
@@ -110,7 +111,10 @@
                     </select>
                 </div>
 
-                 <div class="input-group">
+                 <input type="hidden" id="tvStb" value="기가지니A"> 
+
+
+                <div class="input-group">
                     <label for="additionalTvPlan" class="input-label">추가 TV 선택 (2번째 TV)</label>
                     <select id="additionalTvPlan" class="select-field">
                         <option value="none" data-price="0" data-name="선택 안함">선택 안함</option>
@@ -621,6 +625,22 @@
             "에센스": { 
                 "100단독": { cash: 50000, voucher: 40000 }, "500단독": { cash: 100000, voucher: 40000 }, "1G단독": { cash: 90000, voucher: 50000 },
                 "100번들": { cash: 310000, voucher: 60000 }, "500번들": { cash: 420000, voucher: 30000 }, "기가번들": { cash: 320000, voucher: 30000 }
+            },
+            "에센스 플러스": { 
+                "100단독": { cash: 50000, voucher: 40000 }, "500단독": { cash: 100000, voucher: 40000 }, "1G단독": { cash: 90000, voucher: 50000 },
+                "100번들": { cash: 310000, voucher: 60000 }, "500번들": { cash: 420000, voucher: 30000 }, "기가번들": { cash: 320000, voucher: 30000 }
+            },
+            "넷플릭스 HD": { 
+                "100단독": { cash: 50000, voucher: 40000 }, "500단독": { cash: 100000, voucher: 40000 }, "1G단독": { cash: 90000, voucher: 50000 },
+                "100번들": { cash: 310000, voucher: 60000 }, "500번들": { cash: 390000, voucher: 60000 }, "기가번들": { cash: 360000, voucher: 90000 }
+            },
+            "넷플릭스 UHD": { 
+                "100단독": { cash: 50000, voucher: 40000 }, "500단독": { cash: 100000, voucher: 40000 }, "1G단독": { cash: 90000, voucher: 50000 },
+                "100번들": { cash: 310000, voucher: 60000 }, "500번들": { cash: 390000, voucher: 60000 }, "기가번들": { cash: 360000, voucher: 90000 }
+            },
+            "키즈랜드": { 
+                "100단독": { cash: 50000, voucher: 40000 }, "500단독": { cash: 100000, voucher: 40000 }, "1G단독": { cash: 90000, voucher: 50000 },
+                "100번들": { cash: 310000, voucher: 60000 }, "500번들": { cash: 390000, voucher: 60000 }, "기가번들": { cash: 360000, voucher: 90000 }
             }
         };
 
@@ -628,7 +648,6 @@
         const internetPlanEl = document.getElementById('internetPlan');
         const wifiRouterRentalEl = document.getElementById('wifiRouterRental');
         const tvPlanEl = document.getElementById('tvPlan');
-        // const tvStbEl = document.getElementById('tvStb'); // Removed
         const additionalTvPlanEl = document.getElementById('additionalTvPlan');
         const phonePlanEl = document.getElementById('phonePlan');
         const addonServicesContainerEl = document.getElementById('addonServicesContainer');
@@ -671,7 +690,7 @@
         
         const selectedInternetEl = document.getElementById('selectedInternet');
         const selectedTvEl = document.getElementById('selectedTv');
-        const selectedStbEl = document.getElementById('selectedStb');
+        const selectedStbEl = document.getElementById('selectedStb'); 
         const selectedAdditionalTvEl = document.getElementById('selectedAdditionalTv');
         const selectedPhoneEl = document.getElementById('selectedPhone');
         const selectedMobileCountEl = document.getElementById('selectedMobileCount');
@@ -722,7 +741,9 @@
         calculateButton.addEventListener('click', calculateAndDisplayResults);
         if(dongpanSalesCheckKtEl) {
             dongpanSalesCheckKtEl.addEventListener('change', function() {
-                dongpanPolicyDetailsContainerKtEl.classList.toggle('hidden', !this.checked);
+                if (dongpanPolicyDetailsContainerKtEl) {
+                    dongpanPolicyDetailsContainerKtEl.classList.toggle('hidden', !this.checked);
+                }
                  if (!resultSection.classList.contains('hidden')) { 
                     calculateAndDisplayResults(); 
                 }
@@ -781,12 +802,15 @@
         allDetailSections.forEach(section => {
             if (section.toggleEl && section.containerEl && section.updateFn) { 
                 section.toggleEl.addEventListener('change', function() {
-                    const isSelectedRadio = document.querySelector(`input[name="discountType"][value="${section.radioValue}"]`).checked;
-                    if (isSelectedRadio) { 
+                    const radioForThisToggle = document.querySelector(`input[name="discountType"][value="${section.radioValue}"]`);
+                    if (radioForThisToggle && radioForThisToggle.checked) { 
                         section.containerEl.classList.toggle('hidden', !this.checked);
                         if (this.checked) {
                             section.updateFn();
                         }
+                    } else {
+                        section.containerEl.classList.add('hidden');
+                        this.checked = false;
                     }
                 });
             }
@@ -795,18 +819,21 @@
         internetPlanEl.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
             const isDanDok = selectedOption.text.includes("(단독)");
-            const internetSpeed = selectedOption.value !== 'none' ? parseInt(getSelectedInternetInfo(selectedOption.value).speed) : 0;
+            const internetSpeed = selectedOption.value !== 'none' ? (internetPlans_KT[selectedOption.value]?.speed || 0) : 0;
 
             tvPlanEl.disabled = isDanDok;
             additionalTvPlanEl.disabled = isDanDok;
+            const tvStbHiddenInput = document.getElementById('tvStb'); 
 
             if (isDanDok) {
                 tvPlanEl.value = "none";
                 additionalTvPlanEl.value = "none";
+                if(tvStbHiddenInput) tvStbHiddenInput.value = 'none';
             } else { 
                  if (selectedOption.text.includes("KT인터넷번들") && tvPlanEl.value === "none") { 
                     tvPlanEl.value = "KTTV베이직";
                  }
+                 if(tvStbHiddenInput) tvStbHiddenInput.value = '기가지니A';
             }
             const tvChangeEvent = new Event('change');
             tvPlanEl.dispatchEvent(tvChangeEvent); 
@@ -829,7 +856,7 @@
                         opt.hidden = false;
                     }
                 });
-                if (wifiRouterRentalEl.options[wifiRouterRentalEl.selectedIndex].dataset.name === "KT공유기 무료 (인단독 1GB)") {
+                if (wifiRouterRentalEl.options[wifiRouterRentalEl.selectedIndex]?.dataset.name === "KT공유기 무료 (인단독 1GB)") {
                      if(noWifiOption) wifiRouterRentalEl.value = noWifiOption.value;
                 }
             }
@@ -838,9 +865,12 @@
 
         tvPlanEl.addEventListener('change', () => { 
             const isTvSelected = tvPlanEl.value !== 'none';
-            // tvStbEl is removed, so no need to manage its state here.
+            const tvStbHiddenInput = document.getElementById('tvStb'); 
             if (!isTvSelected) {
                 additionalTvPlanEl.value = 'none'; 
+                if(tvStbHiddenInput) tvStbHiddenInput.value = 'none'; 
+            } else {
+                if(tvStbHiddenInput) tvStbHiddenInput.value = '기가지니A'; 
             }
         });
 
@@ -875,13 +905,15 @@
         }
         
         function getSelectedInternetInfo(planName) {
-            if (!planName || planName === 'none' || !internetPlans_KT[planName]) return { basePrice: 0, modemFee: 0, type: "none", speed: 0 };
+            if (!planName || planName === 'none' || !internetPlans_KT[planName]) {
+                 return { basePrice: 0, modemFee: 0, type: "none", speed: 0 };
+            }
             
             let basePrice = internetPlans_KT[planName].basePrice; 
-            const selectedOptionText = internetPlanEl.options[internetPlanEl.selectedIndex].text;
-
-            if (selectedOptionText.includes("KT인터넷번들500mb")) basePrice = internetPlans_KT["KT인터넷번들500mb"].basePrice;
-            else if (selectedOptionText.includes("KT인터넷번들1GB")) basePrice = internetPlans_KT["KT인터넷번들1GB"].basePrice;
+            const selectedOption = internetPlanEl.options[internetPlanEl.selectedIndex];
+            if (selectedOption && selectedOption.value !== 'none' && selectedOption.text.includes("KT인터넷번들")) {
+                 basePrice = internetPlans_KT[planName].basePrice;
+            }
             
             return { ...internetPlans_KT[planName], basePrice: basePrice };
         }
@@ -898,11 +930,31 @@
             }
         }
         
-        function getMobileTierKeyForSeparateFamily(totalMobileBaseCost, numMobileLines){
+        function getMobileTierKeyFor500MUp(totalMobileBaseCost, numMobileLines){ // Restored function
             if (numMobileLines === 0 || totalMobileBaseCost === 0) return null;
             if (totalMobileBaseCost < 22000) return "모바일_22000미만";
             return "모바일_22000이상";
         }
+        
+        // Placeholder for old totalAmountDiscountsTable if needed for mobile discount reference
+        const totalAmountDiscountsTable = { 
+            "100M": [ 
+                { mobileTotalMin: 0, mobileTotalMax: 21999, internetDiscount: 1650, mobileDiscountInternal: 0, totalDiscount: 1650 },
+                { mobileTotalMin: 22000, mobileTotalMax: 64899, internetDiscount: 3300, mobileDiscountInternal: 0, totalDiscount: 3300 },
+                { mobileTotalMin: 64900, mobileTotalMax: 108899, internetDiscount: 5500, mobileDiscountInternal: 3300, totalDiscount: 8800 },
+                { mobileTotalMin: 108900, mobileTotalMax: 141899, internetDiscount: 5500, mobileDiscountInternal: 14300, totalDiscount: 19800 },
+                { mobileTotalMin: 141900, mobileTotalMax: 174899, internetDiscount: 5500, mobileDiscountInternal: 18700, totalDiscount: 24200 },
+                { mobileTotalMin: 174900, mobileTotalMax: Infinity, internetDiscount: 5500, mobileDiscountInternal: 23100, totalDiscount: 28600 }
+            ],
+            "500M_1G": [ 
+                { mobileTotalMin: 0, mobileTotalMax: 21999, internetDiscount: 2200, mobileDiscountInternal: 0, totalDiscount: 2200 },
+                { mobileTotalMin: 22000, mobileTotalMax: 64899, internetDiscount: 5500, mobileDiscountInternal: 0, totalDiscount: 5500 },
+                { mobileTotalMin: 64900, mobileTotalMax: 108899, internetDiscount: 5500, mobileDiscountInternal: 5500, totalDiscount: 11000 },
+                { mobileTotalMin: 108900, mobileTotalMax: 141899, internetDiscount: 5500, mobileDiscountInternal: 16610, totalDiscount: 22110 },
+                { mobileTotalMin: 141900, mobileTotalMax: 174899, internetDiscount: 5500, mobileDiscountInternal: 22100, totalDiscount: 27610 },
+                { mobileTotalMin: 174900, mobileTotalMax: Infinity, internetDiscount: 5500, mobileDiscountInternal: 27610, totalDiscount: 33110 }
+            ]
+        };
 
 
         function updateTotalAmountDetails() {
@@ -924,23 +976,24 @@
                 const isBundled = tvPlanEl.value !== 'none' || phonePlanEl.value !== 'none';
                 const bundleTypeKey = isBundled ? "TV" : "단독"; 
                 
-                let mobileTierKey = getMobileTierKey(totalMobileBaseCost, numMobileLines, internetSpeedType);
+                let mobileTierKey;
+                if (internetSpeedType === "100M") {
+                    mobileTierKey = getMobileTierKey(totalMobileBaseCost, numMobileLines, internetSpeedType);
+                } else {
+                    mobileTierKey = getMobileTierKeyFor500MUp(totalMobileBaseCost, numMobileLines);
+                }
 
-                if (mobileTierKey && newKtDiscountRules["총액결합할인"]?.[internetSpeedType]?.[bundleTypeKey]?.[mobileTierKey]) {
-                    detailInternetD = newKtDiscountRules["총액결합할인"][internetSpeedType][bundleTypeKey][mobileTierKey];
-                } else if (internetSpeedType === "1G" && bundleTypeKey === "TV" && newKtDiscountRules["총액결합할인"]?.["1G"]?.TV?.["모바일_결합시"]) { 
-                    detailInternetD = newKtDiscountRules["총액결합할인"]["1G"]["TV"]["모바일_결합시"];
+                if (mobileTierKey && newKtDiscountRules.총액결합할인?.[internetSpeedType]?.[bundleTypeKey]?.[mobileTierKey]) {
+                    detailInternetD = newKtDiscountRules.총액결합할인[internetSpeedType][bundleTypeKey][mobileTierKey];
+                } else if (internetSpeedType === "1G" && bundleTypeKey === "TV" && newKtDiscountRules.총액결합할인?.["1G"]?.TV?.["모바일_결합시"]) { 
+                    detailInternetD = newKtDiscountRules.총액결합할인["1G"]["TV"]["모바일_결합시"];
                 }
                 
-                // 모바일 할인액 (총액결합할인 시) - 이 부분은 newKtDiscountRules에 명시적으로 없으므로, 기존 로직을 참고하거나 KT 정책 확인 필요
-                // 여기서는 인터넷 할인액만 표시하고, 모바일/총 할인은 참고용으로 0으로 설정하거나,
-                // KT의 정확한 모바일 할인액 산정 로직을 newKtDiscountRules에 추가해야 함.
-                // 현재는 이전 totalAmountDiscountsTable의 mobileDiscountInternal을 참고하여 표시.
-                const oldInternetTypeKeyForMobile = currentInternet.type.includes("500M") || currentInternet.type.includes("1G") || currentInternet.type.includes("2.5G") ? "500M_1G" : "100M";
-                 if (totalAmountDiscountsTable[oldInternetTypeKeyForMobile]) {
+                const oldInternetTypeKeyForMobile = (currentInternet.speed >= 500) ? "500M_1G" : "100M";
+                if (totalAmountDiscountsTable[oldInternetTypeKeyForMobile]) {
                      for (const tier of totalAmountDiscountsTable[oldInternetTypeKeyForMobile]) {
                         if (totalMobileBaseCost >= tier.mobileTotalMin && totalMobileBaseCost <= tier.mobileTotalMax) {
-                            detailMobileD = tier.mobileDiscountInternal; 
+                            detailMobileD = tier.mobileDiscountInternal || 0; 
                             break;
                         }
                     }
@@ -967,7 +1020,7 @@
                 const isBundled = tvPlanEl.value !== 'none' || phonePlanEl.value !== 'none';
                 const speedKey = currentInternet.speed >= 1000 ? "1G" : "500M";
                 const bundleKey = isBundled ? "_TV" : "_단독";
-                internetDiscount = newKtDiscountRules["프리미엄가족결합"]?.[speedKey + bundleKey] || 0;
+                internetDiscount = newKtDiscountRules.프리미엄가족결합?.[speedKey + bundleKey] || 0;
             }
             if(detailPfInternetDiscountEl) detailPfInternetDiscountEl.textContent = internetDiscount.toLocaleString();
         }
@@ -988,7 +1041,7 @@
                 mobileCost0Input && (parseInt(mobileCost0Input.value) || 0) >= 77000) {
                 if (isInternetOnlyBundle) {
                     const speedKey = currentInternet.speed === 500 ? "500M_단독" : "1G_단독";
-                    internetDiscount = newKtDiscountRules["프리미엄싱글결합"]?.[speedKey] || 0;
+                    internetDiscount = newKtDiscountRules.프리미엄싱글결합?.[speedKey] || 0;
                 }
             }
             if(detailPsInternetDiscountEl) detailPsInternetDiscountEl.textContent = internetDiscount.toLocaleString();
@@ -1006,8 +1059,8 @@
                 else if (currentInternet.speed >= 1000) speedKey = "1G";
                 
                 const bundleKey = isBundled ? "_TV" : "_단독";
-                if (newKtDiscountRules["패밀리결합"]?.[speedKey + bundleKey]) {
-                    internetDiscount = newKtDiscountRules["패밀리결합"][speedKey + bundleKey];
+                if (newKtDiscountRules.패밀리결합?.[speedKey + bundleKey]) {
+                    internetDiscount = newKtDiscountRules.패밀리결합[speedKey + bundleKey];
                 }
             }
             if(detailFbInternetDiscountEl) detailFbInternetDiscountEl.textContent = internetDiscount.toLocaleString();
@@ -1051,10 +1104,10 @@
 
                 if (speedKey) {
                     if (speedKey === "100M") {
-                        internetDiscount = newKtDiscountRules["알뜰폰결합"]["100M_단독_번들"] || 0; 
+                        internetDiscount = newKtDiscountRules.알뜰폰결합?.["100M_단독_번들"] || 0; 
                     } else {
                         const bundleKey = isBundled ? "_TV" : "_단독";
-                        internetDiscount = newKtDiscountRules["알뜰폰결합"][speedKey + bundleKey] || 0;
+                        internetDiscount = newKtDiscountRules.알뜰폰결합?.[speedKey + bundleKey] || 0;
                     }
                 }
             }
@@ -1063,367 +1116,370 @@
 
 
         function calculateAndDisplayResults() {
-            const internetPlanName = internetPlanEl.value;
-            const selectedWifiOptionName = wifiRouterRentalEl.options[wifiRouterRentalEl.selectedIndex].dataset.name;
-            const tvPlanName = tvPlanEl.value;
-            const additionalTvPlanKey = additionalTvPlanEl.value;
-            const phonePlanName = phonePlanEl.value;
-            const numMobileLines = parseInt(mobileLinesCountEl.value) || 0;
-            const isDongpanChecked = dongpanSalesCheckKtEl ? dongpanSalesCheckKtEl.checked : false;
-            const discountType = document.querySelector('input[name="discountType"]:checked').value;
-            const displayMode = document.querySelector('input[name="displayModeKt"]:checked').value;
-            const installationTime = document.querySelector('input[name="installationTime"]:checked').value;
-            const selectedAddonCheckboxes = document.querySelectorAll('#addonServicesContainer input[type="checkbox"]:checked');
+            try {
+                const internetPlanName = internetPlanEl.value;
+                const selectedWifiOption = wifiRouterRentalEl.options[wifiRouterRentalEl.selectedIndex];
+                const selectedWifiOptionName = selectedWifiOption ? selectedWifiOption.dataset.name : "KT공유기 X";
+
+                const tvPlanName = tvPlanEl.value;
+                const additionalTvPlanKey = additionalTvPlanEl.value;
+                const phonePlanName = phonePlanEl.value;
+                const numMobileLines = parseInt(mobileLinesCountEl.value) || 0;
+                const isDongpanChecked = dongpanSalesCheckKtEl ? dongpanSalesCheckKtEl.checked : false;
+                const discountType = document.querySelector('input[name="discountType"]:checked').value;
+                const displayMode = document.querySelector('input[name="displayModeKt"]:checked').value;
+                const installationTime = document.querySelector('input[name="installationTime"]:checked').value;
+                const selectedAddonCheckboxes = document.querySelectorAll('#addonServicesContainer input[type="checkbox"]:checked');
 
 
-            let mobileLinesData = [];
-            let totalMobileBaseCost = 0;
-            let highTierMobileLinesCount = 0;
-            
-            for (let i = 0; i < numMobileLines; i++) {
-                const costInput = document.getElementById(`mobileCost${i}`);
-                const highTierInput = document.getElementById(`mobileHighTier${i}`);
-                const cost = costInput ? (parseInt(costInput.value) || 0) : 0;
-                const isHighTier = highTierInput ? highTierInput.checked : false;
-                mobileLinesData.push({ cost: cost, isHighTier: isHighTier });
-                totalMobileBaseCost += cost;
-                if (isHighTier) {
-                    highTierMobileLinesCount++;
-                }
-            }
-
-            let currentInternet = getSelectedInternetInfo(internetPlanName);
-            let internetBase = currentInternet.basePrice;
-            let modemRental = 0; 
-            let internetDiscount = 0;
-            let actualWifiRouterFee = 0;
-            
-            let tvBase = 0;
-            let currentTvDiscount = 0; 
-            let stbRental = 0; 
-            let phoneBase = 0;
-            let phoneDiscount = 0; 
-            let additionalTvCost = 0;
-            let addonServicesTotalCost = 0;
-
-            if (internetPlanName !== 'none') {
-                 if (currentInternet.speed >= 1000 && internetPlanName.includes("(단독)") && selectedWifiOptionName === "KT공유기 무료 (인단독 1GB)") {
-                     actualWifiRouterFee = 0; 
-                } else if (wifiOptions_KT[selectedWifiOptionName]) {
-                    actualWifiRouterFee = wifiOptions_KT[selectedWifiOptionName].fee;
-                }
-            }
-            
-            selectedAddonCheckboxes.forEach(checkbox => {
-                addonServicesTotalCost += parseInt(checkbox.dataset.price);
-            });
-            
-            let specificBundleInternetDiscountVal = 0;
-            const isTvOrPhoneBundled = tvPlanName !== 'none' || phonePlanName !== 'none';
-
-            if (discountType === 'none') {
-                internetDiscount = 0; 
-                currentTvDiscount = 0; 
-            } else if (internetPlanName !== 'none') {
-                 if (discountType === 'totalAmountBundle') {
-                    const internetSpeedType = currentInternet.speed === 100 ? "100M" : (currentInternet.speed === 500 ? "500M" : "1G");
-                    const bundleType = isTvOrPhoneBundled ? "TV" : "단독"; 
-                    let mobileTierKey = "";
-
-                    if (numMobileLines > 0 && totalMobileBaseCost > 0) {
-                        if (internetSpeedType === "100M") {
-                           mobileTierKey = getMobileTierKey(totalMobileBaseCost, numMobileLines, internetSpeedType);
-                        } else {
-                           mobileTierKey = getMobileTierKeyFor500MUp(totalMobileBaseCost, numMobileLines);
-                        }
-                    }
-                    
-                    if (newKtDiscountRules["총액결합할인"]?.[internetSpeedType]?.[bundleType]?.[mobileTierKey]) {
-                         specificBundleInternetDiscountVal = newKtDiscountRules["총액결합할인"][internetSpeedType][bundleType][mobileTierKey];
-                    } else if (internetSpeedType === "1G" && bundleType === "TV" && newKtDiscountRules["총액결합할인"]?.["1G"]?.TV?.["모바일_결합시"] && numMobileLines > 0) { 
-                        specificBundleInternetDiscountVal = newKtDiscountRules["총액결합할인"]["1G"]["TV"]["모바일_결합시"];
-                    }
-
-                } else if (discountType === 'premiumFamilyBundle') {
-                    if (highTierMobileLinesCount >= 2 && currentInternet.speed >= 500) {
-                        const bundleType = isTvOrPhoneBundled ? "_TV" : "_단독";
-                        const speedKey = currentInternet.speed >= 1000 ? "1G" : "500M";
-                        if (speedKey === "1G" && bundleType === "_단독") {
-                            specificBundleInternetDiscountVal = newKtDiscountRules["프리미엄가족결합"]["1G_단독"] || 0;
-                        } else { 
-                            specificBundleInternetDiscountVal = newKtDiscountRules["프리미엄가족결합"][speedKey + bundleType] || newKtDiscountRules["프리미엄가족결합"]["500M이상"] || 0; 
-                        }
-                    }
-                } else if (discountType === 'premiumSingleBundle') {
-                     const isInternetOnlyBundleForPS = !isTvOrPhoneBundled && additionalTvPlanKey === 'none';
-                    if (currentInternet.speed >= 500 && numMobileLines === 1 && 
-                        mobileLinesData.length > 0 && mobileLinesData[0].isHighTier && 
-                        mobileLinesData[0].cost >= 77000) {
-                        if (isInternetOnlyBundleForPS) { 
-                            const speedKey = currentInternet.speed === 500 ? "500M_단독" : "1G_단독";
-                           specificBundleInternetDiscountVal = newKtDiscountRules["프리미엄싱글결합"][speedKey] || 0;
-                        }
-                    }
-                } else if (discountType === 'mvnoBundle') {
-                    let speedKey = "";
-                    if (currentInternet.speed === 100) speedKey = "100M";
-                    else if (currentInternet.speed === 500) speedKey = "500M";
-                    else if (currentInternet.speed >= 1000) speedKey = "1G";
-
-                    if (speedKey) {
-                        if (speedKey === "100M") {
-                            specificBundleInternetDiscountVal = newKtDiscountRules["알뜰폰결합"]["100M_단독_번들"] || 0;
-                        } else {
-                            const bundleKey = isTvOrPhoneBundled ? "_TV" : "_단독";
-                            specificBundleInternetDiscountVal = newKtDiscountRules["알뜰폰결합"][speedKey + bundleKey] || 0;
-                        }
-                    }
-                } else if (discountType === 'familyBundle') { 
-                    let speedKey = "";
-                    if (currentInternet.speed === 100) speedKey = "100M";
-                    else if (currentInternet.speed === 500) speedKey = "500M";
-                    else if (currentInternet.speed >= 1000) speedKey = "1G";
-                    const bundleKey = isTvOrPhoneBundled ? "_TV" : "_단독";
-                    
-                    if (newKtDiscountRules["패밀리결합"]?.[speedKey + bundleKey]) {
-                         specificBundleInternetDiscountVal = newKtDiscountRules["패밀리결합"][speedKey + bundleKey];
-                    }
-                } else if (discountType === 'separateFamilyBundle') { 
-                    if (isTvOrPhoneBundled) { 
-                        let speedKeyFor따살 = "";
-                        if (currentInternet.speed === 500) speedKeyFor따살 = "500M_TV";
-                        else if (currentInternet.speed >= 1000) speedKeyFor따살 = "1G_TV";
-                        
-                        let mobileTierKeyFor따살 = getMobileTierKeyForSeparateFamily(totalMobileBaseCost, numMobileLines);
-
-                        if (speedKeyFor따살 && mobileTierKeyFor따살 && newKtDiscountRules["따로살아도 가족결합"]?.[speedKeyFor따살]?.[mobileTierKeyFor따살]) {
-                             specificBundleInternetDiscountVal = newKtDiscountRules["따로살아도 가족결합"][speedKeyFor따살][mobileTierKeyFor따살];
-                             currentTvDiscount = newKtDiscountRules["따로살아도 가족결합"][speedKeyFor따살].tvDiscount || 0;
-                        }
+                let mobileLinesData = [];
+                let totalMobileBaseCost = 0;
+                let highTierMobileLinesCount = 0;
+                
+                for (let i = 0; i < numMobileLines; i++) {
+                    const costInput = document.getElementById(`mobileCost${i}`);
+                    const highTierInput = document.getElementById(`mobileHighTier${i}`);
+                    const cost = costInput ? (parseInt(costInput.value) || 0) : 0;
+                    const isHighTier = highTierInput ? highTierInput.checked : false;
+                    mobileLinesData.push({ cost: cost, isHighTier: isHighTier });
+                    totalMobileBaseCost += cost;
+                    if (isHighTier) {
+                        highTierMobileLinesCount++;
                     }
                 }
-                 internetDiscount = specificBundleInternetDiscountVal; 
-            }
-            
-            allDetailSections.forEach(section => {
-                 const radio = document.querySelector(`input[name="discountType"][value="${section.radioValue}"]`);
-                if (radio && radio.checked && section.toggleEl && section.toggleEl.checked && section.updateFn) {
-                    section.updateFn();
-                }
-            });
-            
-            internetDiscount = Math.min(internetDiscount, internetBase); 
-            const finalInternetComponentCost_NoDiscount = internetBase + modemRental + actualWifiRouterFee;
-            const finalInternetComponentCost_WithDiscount = internetBase - internetDiscount + modemRental + actualWifiRouterFee;
 
-            let finalTvComponentCost_NoDiscount = 0;
-            let finalTvComponentCost_WithDiscount = 0;
-            if (tvPlanName !== 'none') {
-                const currentTvPlan = tvPlans_KT[tvPlanName] || { basePrice: 0 };
-                stbRental = 0; 
-                tvBase = currentTvPlan.basePrice; 
-                currentTvDiscount = Math.min(currentTvDiscount, tvBase); 
-                finalTvComponentCost_NoDiscount = tvBase + stbRental;
-                finalTvComponentCost_WithDiscount = tvBase - currentTvDiscount + stbRental;
-            }
-            
-            let additionalTvComponentCost_NoDiscount = 0;
-            let additionalTvComponentCost_WithDiscount = 0; 
-            if (additionalTvPlanKey !== 'none' && additionalTvPlans_KT[additionalTvPlanKey]) {
-                 additionalTvCost = additionalTvPlans_KT[additionalTvPlanKey].basePrice;
-                 additionalTvComponentCost_NoDiscount = additionalTvCost;
-                 additionalTvComponentCost_WithDiscount = additionalTvCost;
-            }
+                let currentInternet = getSelectedInternetInfo(internetPlanName);
+                let internetBase = internetPlanName !== 'none' ? (parseFloat(currentInternet.basePrice) || 0) : 0;
+                let modemRental = 0; 
+                let internetDiscount = 0;
+                let actualWifiRouterFee = 0;
+                
+                let tvBase = 0;
+                let currentTvDiscount = 0; 
+                let stbRental = 0; 
+                let phoneBase = 0;
+                let phoneDiscount = 0; 
+                let additionalTvCost = 0;
+                let addonServicesTotalCost = 0;
 
-            let finalPhoneComponentCost_NoDiscount = 0;
-            let finalPhoneComponentCost_WithDiscount = 0;
-            if (phonePlanName !== 'none') {
-                const currentPhonePlan = phonePlans_KT[phonePlanName] || { basePrice: 0 };
-                phoneBase = currentPhonePlan.basePrice;
-                finalPhoneComponentCost_NoDiscount = phoneBase; 
-                finalPhoneComponentCost_WithDiscount = phoneBase - phoneDiscount; 
-            }
-            
-            let finalAddonServicesCost = addonServicesTotalCost;
-
-            let finalMonthlyDisplayCost;
-            let finalCostLabelText;
-            let displayModeTextForScript;
-
-            if (displayMode === 'preApplied') {
-                finalMonthlyDisplayCost = finalInternetComponentCost_WithDiscount + finalTvComponentCost_WithDiscount + additionalTvComponentCost_WithDiscount + finalPhoneComponentCost_WithDiscount + finalAddonServicesCost;
-                finalCostLabelText = "최종 예상 월 납부액 (할인 적용)";
-                displayModeTextForScript = "(결합 O, 할인 적용됨)";
-            } else { 
-                finalMonthlyDisplayCost = finalInternetComponentCost_NoDiscount + finalTvComponentCost_NoDiscount + additionalTvComponentCost_NoDiscount + finalPhoneComponentCost_NoDiscount + finalAddonServicesCost;
-                finalCostLabelText = "예상 월 기본료 총액 (할인 적용 전)";
-                displayModeTextForScript = "(결합 전 기본료 기준)";
-            }
-
-            totalBaseInternetCostEl.textContent = internetBase.toLocaleString();
-            totalInternetDiscountAmountEl.textContent = internetDiscount.toLocaleString();
-            internetModemRentalEl.textContent = modemRental.toLocaleString();
-            wifiRouterRentalCostDisplayEl.textContent = actualWifiRouterFee.toLocaleString();
-
-            if (tvPlanName !== 'none') {
-                tvCostSummaryContainerEl.classList.remove('hidden');
-                tvBaseCostDisplayEl.textContent = tvBase.toLocaleString();
-                tvDiscountDisplayEl.textContent = currentTvDiscount.toLocaleString();
-                stbRentalCostDisplayEl.textContent = stbRental.toLocaleString(); 
-            } else {
-                tvCostSummaryContainerEl.classList.add('hidden');
-            }
-            
-            if (additionalTvPlanKey !== 'none') {
-                additionalTvCostSummaryContainerEl.classList.remove('hidden');
-                additionalTvCostDisplayEl.textContent = additionalTvCost.toLocaleString();
-            } else {
-                additionalTvCostSummaryContainerEl.classList.add('hidden');
-            }
-
-            if (phonePlanName !== 'none') {
-                phoneCostSummaryContainerEl.classList.remove('hidden');
-                phoneBaseCostDisplayEl.textContent = phoneBase.toLocaleString();
-                phoneDiscountDisplayEl.textContent = phoneDiscount.toLocaleString();
-            } else {
-                phoneCostSummaryContainerEl.classList.add('hidden');
-            }
-            
-            addonServicesSummaryContainerEl.classList.toggle('hidden', addonServicesTotalCost === 0);
-            if (addonServicesTotalCost > 0) {
-                addonServicesTotalCostDisplayEl.textContent = addonServicesTotalCost.toLocaleString();
-            }
-            
-            finalMonthlyCostEl.textContent = finalMonthlyDisplayCost.toLocaleString();
-            finalCostLabelEl.textContent = finalCostLabelText;
-
-
-            let calculatedInstallationFee = 0;
-            const hasInternet = internetPlanName !== 'none';
-            const hasTv = tvPlanName !== 'none';
-            const hasAdditionalTv = additionalTvPlanKey !== 'none';
-            const hasPhone = phonePlanName !== 'none';
-            const isGeneralPhone = phonePlanName === "KT일반 전화일반 전화";
-            const is070Phone = phonePlanName === "KT일반 전화인터넷 전화 (모임스톤)" || phonePlanName === "KT일반 전화인터넷 (단독) 500mb 이상 + 인터넷 전화";
-
-
-            if (hasInternet && hasTv && hasAdditionalTv) { 
-                calculatedInstallationFee = ktInstallationFees_new.internet_tv_addTv[installationTime] || 0;
-            } else if (hasInternet && hasTv && hasPhone) {
-                if (isGeneralPhone) calculatedInstallationFee = ktInstallationFees_new.internet_tv_phone_general[installationTime] || 0;
-                else if (is070Phone) calculatedInstallationFee = ktInstallationFees_new.internet_tv_phone_070[installationTime] || 0;
-                else calculatedInstallationFee = ktInstallationFees_new.internet_tv[installationTime] || 0; 
-            } else if (hasInternet && hasTv) { 
-                calculatedInstallationFee = ktInstallationFees_new.internet_tv[installationTime] || 0;
-            } else if (hasInternet && hasPhone) { 
-                 if (isGeneralPhone) calculatedInstallationFee = ktInstallationFees_new.internet_phone_general[installationTime] || 0;
-                 else if (is070Phone) calculatedInstallationFee = ktInstallationFees_new.internet_phone_070[installationTime] || 0;
-                 else calculatedInstallationFee = ktInstallationFees_new.internet_only[installationTime] || 0; 
-            } else if (hasInternet) { 
-                calculatedInstallationFee = ktInstallationFees_new.internet_only[installationTime] || 0;
-            } else if (hasTv && !hasAdditionalTv && !hasPhone) { 
-                calculatedInstallationFee = ktInstallationFees_new.tv_only[installationTime] || 0;
-            } else if (hasPhone && !hasInternet && !hasTv && !hasAdditionalTv ) { 
-                calculatedInstallationFee = ktInstallationFees_new.phone_only[installationTime] || 0;
-            }
-            
-
-            selectedInternetEl.textContent = internetPlanName !== 'none' ? internetPlanEl.options[internetPlanEl.selectedIndex].text.split(" (")[0] : '미선택';
-            selectedTvEl.textContent = tvPlanName !== 'none' ? tvPlanEl.options[tvPlanEl.selectedIndex].text.split(" (")[0] : '미선택';
-            selectedStbEl.textContent = (tvPlanName !== 'none' && tvPlans_KT[tvPlanName]?.stbIncluded) ? tvPlans_KT[tvPlanName].stbIncluded : '미선택';
-            selectedAdditionalTvEl.textContent = additionalTvPlanKey !== 'none' ? additionalTvPlans_KT[additionalTvPlanKey].name : '미선택';
-            selectedPhoneEl.textContent = phonePlanName !== 'none' ? phonePlanEl.options[phonePlanEl.selectedIndex].text.split(" (")[0] : '미선택';
-            selectedMobileCountEl.textContent = numMobileLines;
-            
-            const discountTypeMap = {
-                none: "결합 할인 없음",
-                totalAmountBundle: "총액 결합할인",
-                premiumFamilyBundle: "프리미엄 가족결합",
-                premiumSingleBundle: "프리미엄 싱글결합",
-                mvnoBundle: "알뜰폰 결합",
-                familyBundle: "패밀리 결합 (인터넷 추가회선)",
-                separateFamilyBundle: "따로 살아도 가족결합"
-            };
-            selectedDiscountTypeEl.textContent = discountTypeMap[discountType] || "알 수 없음";
-            installationCostResultEl.textContent = calculatedInstallationFee.toLocaleString();
-
-            let giftCash = 0;
-            let giftVoucher = 0;
-            let giftPhoneVoucherAmount = 0;
-            let giftAdditionalTvAmount = 0;
-            let giftDongpanAdditionalCashAmount = 0;
-
-            if (internetPlanName !== 'none') {
-                const internetSpeed = currentInternet.speed;
-                let tvCategoryForGift = "베이직"; 
-                let giftKeyPrefix = "";
-                const isTvSelectedForGift = tvPlanName !== 'none';
-
-                if (!isTvSelectedForGift) { 
-                    tvCategoryForGift = "베이직"; 
-                    if (internetSpeed === 100) giftKeyPrefix = "100단독";
-                    else if (internetSpeed === 500) giftKeyPrefix = "500단독";
-                    else if (internetSpeed >= 1000) giftKeyPrefix = "1G단독";
-                } else { 
-                    const selectedTvOption = tvPlanEl.options[tvPlanEl.selectedIndex];
-                    tvCategoryForGift = selectedTvOption.dataset.category || "베이직";
-                    if (internetSpeed === 100) giftKeyPrefix = "100번들";
-                    else if (internetSpeed === 500) giftKeyPrefix = "500번들";
-                    else if (internetSpeed >= 1000) giftKeyPrefix = "기가번들";
+                if (internetPlanName !== 'none') {
+                     if (currentInternet.speed >= 1000 && internetPlanName.includes("(단독)") && selectedWifiOptionName === "KT공유기 무료 (인단독 1GB)") {
+                         actualWifiRouterFee = 0; 
+                    } else if (wifiOptions_KT[selectedWifiOptionName]) {
+                        actualWifiRouterFee = parseFloat(wifiOptions_KT[selectedWifiOptionName].fee) || 0;
+                    }
                 }
                 
-                if (giftTable[tvCategoryForGift] && giftTable[tvCategoryForGift][giftKeyPrefix]) {
-                    giftCash = giftTable[tvCategoryForGift][giftKeyPrefix].cash;
-                    giftVoucher = giftTable[tvCategoryForGift][giftKeyPrefix].voucher;
+                selectedAddonCheckboxes.forEach(checkbox => {
+                    addonServicesTotalCost += (parseFloat(checkbox.dataset.price) || 0);
+                });
+                
+                let specificBundleInternetDiscountVal = 0;
+                const isTvOrPhoneBundled = tvPlanName !== 'none' || phonePlanEl.value !== 'none';
+
+                if (discountType === 'none' || internetPlanName === 'none') { 
+                    internetDiscount = 0; 
+                    currentTvDiscount = 0; 
+                } else {
+                     if (discountType === 'totalAmountBundle') {
+                        const internetSpeedType = currentInternet.speed === 100 ? "100M" : (currentInternet.speed === 500 ? "500M" : "1G");
+                        const bundleType = isTvOrPhoneBundled ? "TV" : "단독"; 
+                        let mobileTierKey = "";
+
+                        if (numMobileLines > 0 && totalMobileBaseCost > 0) {
+                             if (internetSpeedType === "100M") {
+                               mobileTierKey = getMobileTierKey(totalMobileBaseCost, numMobileLines, internetSpeedType);
+                            } else {
+                               mobileTierKey = getMobileTierKeyFor500MUp(totalMobileBaseCost, numMobileLines); // Corrected function call
+                            }
+                        }
+                        
+                        if (mobileTierKey && newKtDiscountRules.총액결합할인?.[internetSpeedType]?.[bundleType]?.[mobileTierKey]) {
+                             specificBundleInternetDiscountVal = parseFloat(newKtDiscountRules.총액결합할인[internetSpeedType][bundleType][mobileTierKey]) || 0;
+                        } else if (internetSpeedType === "1G" && bundleType === "TV" && newKtDiscountRules.총액결합할인?.["1G"]?.TV?.["모바일_결합시"] && numMobileLines > 0) { 
+                            specificBundleInternetDiscountVal = parseFloat(newKtDiscountRules.총액결합할인["1G"]["TV"]["모바일_결합시"]) || 0;
+                        }
+
+                    } else if (discountType === 'premiumFamilyBundle') {
+                        if (highTierMobileLinesCount >= 2 && currentInternet.speed >= 500) {
+                            const bundleType = isTvOrPhoneBundled ? "_TV" : "_단독";
+                            const speedKey = currentInternet.speed >= 1000 ? "1G" : "500M";
+                            specificBundleInternetDiscountVal = parseFloat(newKtDiscountRules.프리미엄가족결합?.[speedKey + bundleType]) || 0;
+                        }
+                    } else if (discountType === 'premiumSingleBundle') {
+                         const isInternetOnlyBundleForPS = !isTvOrPhoneBundled && additionalTvPlanKey === 'none';
+                        if (currentInternet.speed >= 500 && numMobileLines === 1 && 
+                            mobileLinesData.length > 0 && mobileLinesData[0].isHighTier && 
+                            mobileLinesData[0].cost >= 77000) {
+                            if (isInternetOnlyBundleForPS) { 
+                                const speedKey = currentInternet.speed === 500 ? "500M_단독" : "1G_단독";
+                               specificBundleInternetDiscountVal = parseFloat(newKtDiscountRules.프리미엄싱글결합?.[speedKey]) || 0;
+                            }
+                        }
+                    } else if (discountType === 'mvnoBundle') {
+                        let speedKey = "";
+                        if (currentInternet.speed === 100) speedKey = "100M";
+                        else if (currentInternet.speed === 500) speedKey = "500M";
+                        else if (currentInternet.speed >= 1000) speedKey = "1G";
+
+                        if (speedKey) {
+                            if (speedKey === "100M") {
+                                specificBundleInternetDiscountVal = parseFloat(newKtDiscountRules.알뜰폰결합?.["100M_단독_번들"]) || 0;
+                            } else {
+                                const bundleKey = isTvOrPhoneBundled ? "_TV" : "_단독";
+                                specificBundleInternetDiscountVal = parseFloat(newKtDiscountRules.알뜰폰결합?.[speedKey + bundleKey]) || 0;
+                            }
+                        }
+                    } else if (discountType === 'familyBundle') { 
+                        let speedKey = "";
+                        if (currentInternet.speed === 100) speedKey = "100M";
+                        else if (currentInternet.speed === 500) speedKey = "500M";
+                        else if (currentInternet.speed >= 1000) speedKey = "1G";
+                        const bundleKey = isTvOrPhoneBundled ? "_TV" : "_단독";
+                        
+                        if (newKtDiscountRules.패밀리결합?.[speedKey + bundleKey]) {
+                             specificBundleInternetDiscountVal = parseFloat(newKtDiscountRules.패밀리결합[speedKey + bundleKey]) || 0;
+                        }
+                    } else if (discountType === 'separateFamilyBundle') { 
+                        if (isTvOrPhoneBundled) { 
+                            let speedKeyFor따살 = "";
+                            if (currentInternet.speed === 500) speedKeyFor따살 = "500M_TV";
+                            else if (currentInternet.speed >= 1000) speedKeyFor따살 = "1G_TV";
+                            
+                            let mobileTierKeyFor따살 = getMobileTierKeyForSeparateFamily(totalMobileBaseCost, numMobileLines);
+
+                            if (speedKeyFor따살 && mobileTierKeyFor따살 && newKtDiscountRules["따로살아도 가족결합"]?.[speedKeyFor따살]?.[mobileTierKeyFor따살]) {
+                                 specificBundleInternetDiscountVal = parseFloat(newKtDiscountRules["따로살아도 가족결합"][speedKeyFor따살][mobileTierKeyFor따살]) || 0;
+                                 currentTvDiscount = parseFloat(newKtDiscountRules["따로살아도 가족결합"][speedKeyFor따살].tvDiscount) || 0;
+                            }
+                        }
+                    }
+                     internetDiscount = parseFloat(specificBundleInternetDiscountVal) || 0; 
+                }
+                
+                allDetailSections.forEach(section => {
+                    const radio = document.querySelector(`input[name="discountType"][value="${section.radioValue}"]`);
+                    if (radio && radio.checked && section.toggleEl && section.toggleEl.checked && section.updateFn) {
+                        section.updateFn();
+                    }
+                });
+                
+                internetDiscount = Math.min(internetDiscount, internetBase); 
+                const finalInternetComponentCost_NoDiscount = internetBase + modemRental + actualWifiRouterFee;
+                const finalInternetComponentCost_WithDiscount = internetBase - internetDiscount + modemRental + actualWifiRouterFee;
+
+                let finalTvComponentCost_NoDiscount = 0;
+                let finalTvComponentCost_WithDiscount = 0;
+                if (tvPlanName !== 'none') {
+                    const currentTvPlan = tvPlans_KT[tvPlanName] || { basePrice: 0 };
+                    stbRental = 0; 
+                    tvBase = parseFloat(currentTvPlan.basePrice) || 0; 
+                    currentTvDiscount = Math.min(parseFloat(currentTvDiscount) || 0, tvBase); 
+                    finalTvComponentCost_NoDiscount = tvBase + stbRental;
+                    finalTvComponentCost_WithDiscount = tvBase - currentTvDiscount + stbRental;
+                }
+                
+                let additionalTvComponentCost_NoDiscount = 0;
+                let additionalTvComponentCost_WithDiscount = 0; 
+                if (additionalTvPlanKey !== 'none' && additionalTvPlans_KT[additionalTvPlanKey]) {
+                     additionalTvCost = parseFloat(additionalTvPlans_KT[additionalTvPlanKey].basePrice) || 0;
+                     additionalTvComponentCost_NoDiscount = additionalTvCost;
+                     additionalTvComponentCost_WithDiscount = additionalTvCost;
                 }
 
-                if (isDongpanChecked && numMobileLines > 0) {
-                    const isTvBundledForDongpan = tvPlanName !== 'none';
-                    const dongpanBundleType = isTvBundledForDongpan ? "TV번들" : "단독";
-                    let internetGiftKeyPart = "";
-                    if (internetSpeed === 100) internetGiftKeyPart = "100M";
-                    else if (internetSpeed === 500) internetGiftKeyPart = "500M";
-                    else if (internetSpeed >= 1000) internetGiftKeyPart = "1G";
+                let finalPhoneComponentCost_NoDiscount = 0;
+                let finalPhoneComponentCost_WithDiscount = 0;
+                if (phonePlanName !== 'none') {
+                    const currentPhonePlan = phonePlans_KT[phonePlanName] || { basePrice: 0 };
+                    phoneBase = parseFloat(currentPhonePlan.basePrice) || 0;
+                    finalPhoneComponentCost_NoDiscount = phoneBase; 
+                    finalPhoneComponentCost_WithDiscount = phoneBase - (parseFloat(phoneDiscount) || 0); 
+                }
+                
+                let finalAddonServicesCost = addonServicesTotalCost;
 
-                    const maxDongpanLines = isTvBundledForDongpan ? 3 : 1;
+                let finalMonthlyDisplayCost;
+                let finalCostLabelText;
+                let displayModeTextForScript;
 
-                    for (let i = 0; i < Math.min(numMobileLines, maxDongpanLines); i++) {
-                         const mobileLineFeeInput = document.getElementById(`mobileCost${i}`);
-                         const mobileLineFee = mobileLineFeeInput ? (parseInt(mobileLineFeeInput.value) || 0) : 0;
-                         let mobileFeeTierKey = null;
-                         if (mobileLineFee >= 37000 && mobileLineFee <= 58000) mobileFeeTierKey = "37K";
-                         else if (mobileLineFee >= 61000 && mobileLineFee <= 89000) mobileFeeTierKey = "61K";
-                         else if (mobileLineFee >= 90000 && mobileLineFee <= 110000) mobileFeeTierKey = "90K";
+                if (displayMode === 'preApplied') {
+                    finalMonthlyDisplayCost = finalInternetComponentCost_WithDiscount + finalTvComponentCost_WithDiscount + additionalTvComponentCost_WithDiscount + finalPhoneComponentCost_WithDiscount + finalAddonServicesCost;
+                    finalCostLabelText = "최종 예상 월 납부액 (할인 적용)";
+                    displayModeTextForScript = "(결합 O, 할인 적용됨)";
+                } else { 
+                    finalMonthlyDisplayCost = finalInternetComponentCost_NoDiscount + finalTvComponentCost_NoDiscount + additionalTvComponentCost_NoDiscount + finalPhoneComponentCost_NoDiscount + finalAddonServicesCost;
+                    finalCostLabelText = "예상 월 기본료 총액 (할인 적용 전)";
+                    displayModeTextForScript = "(결합 전 기본료 기준)";
+                }
 
-                         if (mobileFeeTierKey && internetGiftKeyPart) {
-                            const giftKey = internetGiftKeyPart + "_" + dongpanBundleType;
-                            if (dongpanAdditionalGiftTable_KT[mobileFeeTierKey] && dongpanAdditionalGiftTable_KT[mobileFeeTierKey][giftKey]) {
-                                giftDongpanAdditionalCashAmount += dongpanAdditionalGiftTable_KT[mobileFeeTierKey][giftKey];
+                totalBaseInternetCostEl.textContent = internetBase.toLocaleString();
+                totalInternetDiscountAmountEl.textContent = internetDiscount.toLocaleString();
+                internetModemRentalEl.textContent = modemRental.toLocaleString();
+                wifiRouterRentalCostDisplayEl.textContent = actualWifiRouterFee.toLocaleString();
+
+                if (tvPlanName !== 'none') {
+                    tvCostSummaryContainerEl.classList.remove('hidden');
+                    tvBaseCostDisplayEl.textContent = tvBase.toLocaleString();
+                    tvDiscountDisplayEl.textContent = currentTvDiscount.toLocaleString();
+                    stbRentalCostDisplayEl.textContent = stbRental.toLocaleString(); 
+                } else {
+                    tvCostSummaryContainerEl.classList.add('hidden');
+                }
+                
+                if (additionalTvPlanKey !== 'none') {
+                    additionalTvCostSummaryContainerEl.classList.remove('hidden');
+                    additionalTvCostDisplayEl.textContent = additionalTvCost.toLocaleString();
+                } else {
+                    additionalTvCostSummaryContainerEl.classList.add('hidden');
+                }
+
+                if (phonePlanName !== 'none') {
+                    phoneCostSummaryContainerEl.classList.remove('hidden');
+                    phoneBaseCostDisplayEl.textContent = phoneBase.toLocaleString();
+                    phoneDiscountDisplayEl.textContent = phoneDiscount.toLocaleString();
+                } else {
+                    phoneCostSummaryContainerEl.classList.add('hidden');
+                }
+                
+                addonServicesSummaryContainerEl.classList.toggle('hidden', addonServicesTotalCost === 0);
+                if (addonServicesTotalCost > 0) {
+                    addonServicesTotalCostDisplayEl.textContent = addonServicesTotalCost.toLocaleString();
+                }
+                
+                finalMonthlyCostEl.textContent = finalMonthlyDisplayCost.toLocaleString();
+                finalCostLabelEl.textContent = finalCostLabelText;
+
+
+                let calculatedInstallationFee = 0;
+                const hasInternet = internetPlanName !== 'none';
+                const hasTv = tvPlanName !== 'none';
+                const hasAdditionalTv = additionalTvPlanKey !== 'none';
+                const hasPhone = phonePlanName !== 'none';
+                const isGeneralPhone = phonePlanName === "KT일반 전화일반 전화";
+                const is070Phone = phonePlanName === "KT일반 전화인터넷 전화 (모임스톤)" || phonePlanName === "KT일반 전화인터넷 (단독) 500mb 이상 + 인터넷 전화";
+
+
+                if (hasInternet && hasTv && hasAdditionalTv) { 
+                    calculatedInstallationFee = ktInstallationFees_new.internet_tv_addTv?.[installationTime] || 0;
+                } else if (hasInternet && hasTv && hasPhone) {
+                    if (isGeneralPhone) calculatedInstallationFee = ktInstallationFees_new.internet_tv_phone_general?.[installationTime] || 0;
+                    else if (is070Phone) calculatedInstallationFee = ktInstallationFees_new.internet_tv_phone_070?.[installationTime] || 0;
+                    else calculatedInstallationFee = ktInstallationFees_new.internet_tv?.[installationTime] || 0; 
+                } else if (hasInternet && hasTv) { 
+                    calculatedInstallationFee = ktInstallationFees_new.internet_tv?.[installationTime] || 0;
+                } else if (hasInternet && hasPhone) { 
+                     if (isGeneralPhone) calculatedInstallationFee = ktInstallationFees_new.internet_phone_general?.[installationTime] || 0;
+                     else if (is070Phone) calculatedInstallationFee = ktInstallationFees_new.internet_phone_070?.[installationTime] || 0;
+                     else calculatedInstallationFee = ktInstallationFees_new.internet_only?.[installationTime] || 0; 
+                } else if (hasInternet) { 
+                    calculatedInstallationFee = ktInstallationFees_new.internet_only?.[installationTime] || 0;
+                } else if (hasTv && !hasAdditionalTv && !hasPhone) { 
+                    calculatedInstallationFee = ktInstallationFees_new.tv_only?.[installationTime] || 0;
+                } else if (hasPhone && !hasInternet && !hasTv && !hasAdditionalTv ) { 
+                    calculatedInstallationFee = ktInstallationFees_new.phone_only?.[installationTime] || 0;
+                }
+                
+
+                selectedInternetEl.textContent = internetPlanName !== 'none' ? internetPlanEl.options[internetPlanEl.selectedIndex].text.split(" (")[0] : '미선택';
+                selectedTvEl.textContent = tvPlanName !== 'none' ? tvPlanEl.options[tvPlanEl.selectedIndex].text.split(" (")[0] : '미선택';
+                selectedStbEl.textContent = (tvPlanName !== 'none' && tvPlans_KT[tvPlanName]?.stbIncluded) ? tvPlans_KT[tvPlanName].stbIncluded : '미선택';
+                selectedAdditionalTvEl.textContent = additionalTvPlanKey !== 'none' ? additionalTvPlans_KT[additionalTvPlanKey].name : '미선택';
+                selectedPhoneEl.textContent = phonePlanName !== 'none' ? phonePlanEl.options[phonePlanEl.selectedIndex].text.split(" (")[0] : '미선택';
+                selectedMobileCountEl.textContent = numMobileLines;
+                
+                const discountTypeMap = {
+                    none: "결합 할인 없음",
+                    totalAmountBundle: "총액 결합할인",
+                    premiumFamilyBundle: "프리미엄 가족결합",
+                    premiumSingleBundle: "프리미엄 싱글결합",
+                    mvnoBundle: "알뜰폰 결합",
+                    familyBundle: "패밀리 결합 (인터넷 추가회선)",
+                    separateFamilyBundle: "따로 살아도 가족결합"
+                };
+                selectedDiscountTypeEl.textContent = discountTypeMap[discountType] || "알 수 없음";
+                installationCostResultEl.textContent = calculatedInstallationFee.toLocaleString();
+
+                let giftCash = 0;
+                let giftVoucher = 0;
+                let giftPhoneVoucherAmount = 0;
+                let giftAdditionalTvAmount = 0;
+                let giftDongpanAdditionalCashAmount = 0;
+
+                if (internetPlanName !== 'none') {
+                    const internetSpeed = currentInternet.speed;
+                    let tvCategoryForGift = "베이직"; 
+                    let giftKeyPrefix = "";
+                    const isTvSelectedForGift = tvPlanName !== 'none';
+
+                    if (!isTvSelectedForGift) { 
+                        tvCategoryForGift = "베이직"; 
+                        if (internetSpeed === 100) giftKeyPrefix = "100단독";
+                        else if (internetSpeed === 500) giftKeyPrefix = "500단독";
+                        else if (internetSpeed >= 1000) giftKeyPrefix = "1G단독";
+                    } else { 
+                        const selectedTvOption = tvPlanEl.options[tvPlanEl.selectedIndex];
+                        tvCategoryForGift = selectedTvOption.dataset.category || "베이직";
+                        if (internetSpeed === 100) giftKeyPrefix = "100번들";
+                        else if (internetSpeed === 500) giftKeyPrefix = "500번들";
+                        else if (internetSpeed >= 1000) giftKeyPrefix = "기가번들";
+                    }
+                    
+                    if (giftTable[tvCategoryForGift] && giftTable[tvCategoryForGift][giftKeyPrefix]) {
+                        giftCash = giftTable[tvCategoryForGift][giftKeyPrefix].cash;
+                        giftVoucher = giftTable[tvCategoryForGift][giftKeyPrefix].voucher;
+                    }
+
+                    if (isDongpanChecked && numMobileLines > 0) {
+                        const isTvBundledForDongpan = tvPlanName !== 'none';
+                        const dongpanBundleType = isTvBundledForDongpan ? "TV번들" : "단독";
+                        let internetGiftKeyPart = "";
+                        if (internetSpeed === 100) internetGiftKeyPart = "100M";
+                        else if (internetSpeed === 500) internetGiftKeyPart = "500M";
+                        else if (internetSpeed >= 1000) internetGiftKeyPart = "1G";
+
+                        const maxDongpanLines = isTvBundledForDongpan ? 3 : 1;
+
+                        for (let i = 0; i < Math.min(numMobileLines, maxDongpanLines); i++) {
+                             const mobileLineFeeInput = document.getElementById(`mobileCost${i}`);
+                             const mobileLineFee = mobileLineFeeInput ? (parseInt(mobileLineFeeInput.value) || 0) : 0;
+                             let mobileFeeTierKey = null;
+                             if (mobileLineFee >= 37000 && mobileLineFee <= 58000) mobileFeeTierKey = "37K";
+                             else if (mobileLineFee >= 61000 && mobileLineFee <= 89000) mobileFeeTierKey = "61K";
+                             else if (mobileLineFee >= 90000 && mobileLineFee <= 110000) mobileFeeTierKey = "90K";
+
+                             if (mobileFeeTierKey && internetGiftKeyPart) {
+                                const giftKey = internetGiftKeyPart + "_" + dongpanBundleType;
+                                if (dongpanAdditionalGiftTable_KT[mobileFeeTierKey] && dongpanAdditionalGiftTable_KT[mobileFeeTierKey][giftKey]) {
+                                    giftDongpanAdditionalCashAmount += dongpanAdditionalGiftTable_KT[mobileFeeTierKey][giftKey];
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            if (phonePlanName !== 'none') {
-                giftPhoneVoucherAmount = 20000;
-            }
-            if (additionalTvPlanKey !== 'none') {
-                giftAdditionalTvAmount = 30000; 
-            }
+                if (phonePlanName !== 'none') {
+                    giftPhoneVoucherAmount = 20000;
+                }
+                if (additionalTvPlanKey !== 'none') {
+                    giftAdditionalTvAmount = 30000; 
+                }
 
-            dongpanCashContainerKtEl.classList.toggle('hidden', !isDongpanChecked || giftDongpanAdditionalCashAmount === 0);
-            giftDongpanAdditionalCashKtEl.textContent = giftDongpanAdditionalCashAmount.toLocaleString();
+                dongpanCashContainerKtEl.classList.toggle('hidden', !isDongpanChecked || giftDongpanAdditionalCashAmount === 0);
+                giftDongpanAdditionalCashKtEl.textContent = giftDongpanAdditionalCashAmount.toLocaleString();
 
-            giftCashEl.textContent = giftCash.toLocaleString();
-            giftVoucherEl.textContent = giftVoucher.toLocaleString();
-            giftPhoneVoucherEl.textContent = giftPhoneVoucherAmount.toLocaleString();
-            giftAdditionalTvEl.textContent = giftAdditionalTvAmount.toLocaleString();
-            giftTotalEl.textContent = (giftCash + giftVoucher + giftPhoneVoucherAmount + giftAdditionalTvAmount + giftDongpanAdditionalCashAmount).toLocaleString();
-            
-            resultSection.classList.remove('hidden');
-            messageScriptSectionEl.classList.remove('hidden');
-            generateMessageScripts(displayModeTextForScript); 
+                giftCashEl.textContent = giftCash.toLocaleString();
+                giftVoucherEl.textContent = giftVoucher.toLocaleString();
+                giftPhoneVoucherEl.textContent = giftPhoneVoucherAmount.toLocaleString();
+                giftAdditionalTvEl.textContent = giftAdditionalTvAmount.toLocaleString();
+                giftTotalEl.textContent = (giftCash + giftVoucher + giftPhoneVoucherAmount + giftAdditionalTvAmount + giftDongpanAdditionalCashAmount).toLocaleString();
+                
+                resultSection.classList.remove('hidden');
+                messageScriptSectionEl.classList.remove('hidden');
+                generateMessageScripts(displayModeTextForScript); 
+            } catch (error) {
+                console.error("계산 중 오류 발생:", error);
+                alert("계산 중 오류가 발생했습니다. 입력 값을 확인하거나 잠시 후 다시 시도해주세요. 문제가 지속되면 개발자 콘솔(F12)의 오류 메시지를 확인해주세요.");
+            }
         }
 
         function generateMessageScripts(displayModeTextParam) { 
@@ -1471,7 +1527,6 @@
 
             let productDescriptionMemo = internetPlanText;
             if (firstTvText !== "미선택") productDescriptionMemo += ` + ${firstTvText}`;
-            // STB는 TV 요금제 이름에 이미 포함되어 있으므로 별도 추가 안 함
             productDescriptionMemo += additionalTvText;
             if (phoneText !== "미선택") productDescriptionMemo += ` + ${phoneText}`;
 
@@ -1484,7 +1539,6 @@
             
             let productDescriptionInfo = `▶️ ${internetPlanText}`;
             if (firstTvText !== "미선택") productDescriptionInfo += `\n▶️ ${firstTvText}`;
-            // STB는 TV 요금제 이름에 이미 포함
             if(additionalTvText) productDescriptionInfo += `\n▶️ (추가) ${additionalTvPlans_KT[additionalTvPlanKey].name}`;
             if (phoneText !== "미선택") productDescriptionInfo += `\n▶️ ${phoneText}`;
 
@@ -1501,7 +1555,6 @@ ${productDescriptionInfo}
             
             let productDescriptionComplete = `▶️ ${internetPlanText}`;
             if (firstTvText !== "미선택") productDescriptionComplete += `\n▶️ ${firstTvText}`;
-            // STB는 TV 요금제 이름에 이미 포함
             if(additionalTvText) productDescriptionComplete += `\n▶️ (추가) ${additionalTvPlans_KT[additionalTvPlanKey].name}`;
             if (phoneText !== "미선택") productDescriptionComplete += `\n▶️ ${phoneText}`;
 
@@ -1573,7 +1626,6 @@ https://miso.kr/booking/forms/secure-details?querystring=고객님 전화번호`
         function setInitialDefaults() {
             internetPlanEl.value = "KT인터넷번들1GB"; 
             tvPlanEl.value = "KTTV베이직"; 
-            // tvStbEl.value = "기가지니A"; // tvStbEl is removed
             additionalTvPlanEl.value = "none"; 
             phonePlanEl.value = "none"; 
             wifiRouterRentalEl.value = "0"; 
