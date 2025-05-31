@@ -8,8 +8,7 @@
     <!-- Application Structure Plan: 
         Single-page interactive calculator for KT.
         Updates:
-        1. Restored/Corrected the getMobileTierKeyFor500MUp function definition.
-        2. Ensured correct function calls in calculateAndDisplayResults for mobile tier key generation.
+        1. Passed installationTime variable to generateMessageScripts function to resolve ReferenceError.
     -->
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; /* slate-50 */ }
@@ -111,7 +110,7 @@
                     </select>
                 </div>
 
-                 <input type="hidden" id="tvStb" value="기가지니A"> 
+                 <input type="hidden" id="tvStbHiddenInfo" value="기가지니A"> 
 
 
                 <div class="input-group">
@@ -643,6 +642,25 @@
                 "100번들": { cash: 310000, voucher: 60000 }, "500번들": { cash: 390000, voucher: 60000 }, "기가번들": { cash: 360000, voucher: 90000 }
             }
         };
+        
+        const totalAmountDiscountsTable = { 
+            "100M": [ 
+                { mobileTotalMin: 0, mobileTotalMax: 21999, internetDiscount: 1650, mobileDiscountInternal: 0, totalDiscount: 1650 },
+                { mobileTotalMin: 22000, mobileTotalMax: 64899, internetDiscount: 3300, mobileDiscountInternal: 0, totalDiscount: 3300 },
+                { mobileTotalMin: 64900, mobileTotalMax: 108899, internetDiscount: 5500, mobileDiscountInternal: 3300, totalDiscount: 8800 },
+                { mobileTotalMin: 108900, mobileTotalMax: 141899, internetDiscount: 5500, mobileDiscountInternal: 14300, totalDiscount: 19800 },
+                { mobileTotalMin: 141900, mobileTotalMax: 174899, internetDiscount: 5500, mobileDiscountInternal: 18700, totalDiscount: 24200 },
+                { mobileTotalMin: 174900, mobileTotalMax: Infinity, internetDiscount: 5500, mobileDiscountInternal: 23100, totalDiscount: 28600 }
+            ],
+            "500M_1G": [ 
+                { mobileTotalMin: 0, mobileTotalMax: 21999, internetDiscount: 2200, mobileDiscountInternal: 0, totalDiscount: 2200 },
+                { mobileTotalMin: 22000, mobileTotalMax: 64899, internetDiscount: 5500, mobileDiscountInternal: 0, totalDiscount: 5500 },
+                { mobileTotalMin: 64900, mobileTotalMax: 108899, internetDiscount: 5500, mobileDiscountInternal: 5500, totalDiscount: 11000 },
+                { mobileTotalMin: 108900, mobileTotalMax: 141899, internetDiscount: 5500, mobileDiscountInternal: 16610, totalDiscount: 22110 },
+                { mobileTotalMin: 141900, mobileTotalMax: 174899, internetDiscount: 5500, mobileDiscountInternal: 22100, totalDiscount: 27610 },
+                { mobileTotalMin: 174900, mobileTotalMax: Infinity, internetDiscount: 5500, mobileDiscountInternal: 27610, totalDiscount: 33110 }
+            ]
+        };
 
 
         const internetPlanEl = document.getElementById('internetPlan');
@@ -823,7 +841,7 @@
 
             tvPlanEl.disabled = isDanDok;
             additionalTvPlanEl.disabled = isDanDok;
-            const tvStbHiddenInput = document.getElementById('tvStb'); 
+            const tvStbHiddenInput = document.getElementById('tvStbHiddenInfo'); 
 
             if (isDanDok) {
                 tvPlanEl.value = "none";
@@ -865,7 +883,7 @@
 
         tvPlanEl.addEventListener('change', () => { 
             const isTvSelected = tvPlanEl.value !== 'none';
-            const tvStbHiddenInput = document.getElementById('tvStb'); 
+            const tvStbHiddenInput = document.getElementById('tvStbHiddenInfo'); 
             if (!isTvSelected) {
                 additionalTvPlanEl.value = 'none'; 
                 if(tvStbHiddenInput) tvStbHiddenInput.value = 'none'; 
@@ -930,31 +948,17 @@
             }
         }
         
-        function getMobileTierKeyFor500MUp(totalMobileBaseCost, numMobileLines){ // Restored function
+        function getMobileTierKeyFor500MUp(totalMobileBaseCost, numMobileLines){
             if (numMobileLines === 0 || totalMobileBaseCost === 0) return null;
             if (totalMobileBaseCost < 22000) return "모바일_22000미만";
             return "모바일_22000이상";
         }
         
-        // Placeholder for old totalAmountDiscountsTable if needed for mobile discount reference
-        const totalAmountDiscountsTable = { 
-            "100M": [ 
-                { mobileTotalMin: 0, mobileTotalMax: 21999, internetDiscount: 1650, mobileDiscountInternal: 0, totalDiscount: 1650 },
-                { mobileTotalMin: 22000, mobileTotalMax: 64899, internetDiscount: 3300, mobileDiscountInternal: 0, totalDiscount: 3300 },
-                { mobileTotalMin: 64900, mobileTotalMax: 108899, internetDiscount: 5500, mobileDiscountInternal: 3300, totalDiscount: 8800 },
-                { mobileTotalMin: 108900, mobileTotalMax: 141899, internetDiscount: 5500, mobileDiscountInternal: 14300, totalDiscount: 19800 },
-                { mobileTotalMin: 141900, mobileTotalMax: 174899, internetDiscount: 5500, mobileDiscountInternal: 18700, totalDiscount: 24200 },
-                { mobileTotalMin: 174900, mobileTotalMax: Infinity, internetDiscount: 5500, mobileDiscountInternal: 23100, totalDiscount: 28600 }
-            ],
-            "500M_1G": [ 
-                { mobileTotalMin: 0, mobileTotalMax: 21999, internetDiscount: 2200, mobileDiscountInternal: 0, totalDiscount: 2200 },
-                { mobileTotalMin: 22000, mobileTotalMax: 64899, internetDiscount: 5500, mobileDiscountInternal: 0, totalDiscount: 5500 },
-                { mobileTotalMin: 64900, mobileTotalMax: 108899, internetDiscount: 5500, mobileDiscountInternal: 5500, totalDiscount: 11000 },
-                { mobileTotalMin: 108900, mobileTotalMax: 141899, internetDiscount: 5500, mobileDiscountInternal: 16610, totalDiscount: 22110 },
-                { mobileTotalMin: 141900, mobileTotalMax: 174899, internetDiscount: 5500, mobileDiscountInternal: 22100, totalDiscount: 27610 },
-                { mobileTotalMin: 174900, mobileTotalMax: Infinity, internetDiscount: 5500, mobileDiscountInternal: 27610, totalDiscount: 33110 }
-            ]
-        };
+        function getMobileTierKeyForSeparateFamily(totalMobileBaseCost, numMobileLines){
+            if (numMobileLines === 0 || totalMobileBaseCost === 0) return null;
+            if (totalMobileBaseCost < 22000) return "모바일_22000미만";
+            return "모바일_22000이상";
+        }
 
 
         function updateTotalAmountDetails() {
@@ -990,8 +994,9 @@
                 }
                 
                 const oldInternetTypeKeyForMobile = (currentInternet.speed >= 500) ? "500M_1G" : "100M";
-                if (totalAmountDiscountsTable[oldInternetTypeKeyForMobile]) {
-                     for (const tier of totalAmountDiscountsTable[oldInternetTypeKeyForMobile]) {
+                const oldTotalAmountTable = window.totalAmountDiscountsTable || {}; 
+                if (oldTotalAmountTable[oldInternetTypeKeyForMobile]) {
+                     for (const tier of oldTotalAmountTable[oldInternetTypeKeyForMobile]) {
                         if (totalMobileBaseCost >= tier.mobileTotalMin && totalMobileBaseCost <= tier.mobileTotalMax) {
                             detailMobileD = tier.mobileDiscountInternal || 0; 
                             break;
@@ -1190,7 +1195,7 @@
                              if (internetSpeedType === "100M") {
                                mobileTierKey = getMobileTierKey(totalMobileBaseCost, numMobileLines, internetSpeedType);
                             } else {
-                               mobileTierKey = getMobileTierKeyFor500MUp(totalMobileBaseCost, numMobileLines); // Corrected function call
+                               mobileTierKey = getMobileTierKeyFor500MUp(totalMobileBaseCost, numMobileLines);
                             }
                         }
                         
@@ -1475,14 +1480,14 @@
                 
                 resultSection.classList.remove('hidden');
                 messageScriptSectionEl.classList.remove('hidden');
-                generateMessageScripts(displayModeTextForScript); 
+                generateMessageScripts(displayModeTextForScript, installationTime); 
             } catch (error) {
                 console.error("계산 중 오류 발생:", error);
                 alert("계산 중 오류가 발생했습니다. 입력 값을 확인하거나 잠시 후 다시 시도해주세요. 문제가 지속되면 개발자 콘솔(F12)의 오류 메시지를 확인해주세요.");
             }
         }
 
-        function generateMessageScripts(displayModeTextParam) { 
+        function generateMessageScripts(displayModeTextParam, installTimeParam) { 
             const internetOption = internetPlanEl.options[internetPlanEl.selectedIndex];
             const internetPlanText = internetOption.value !== 'none' ? internetOption.text.split(' (')[0] : '인터넷 미선택';
             
@@ -1506,7 +1511,7 @@
             const monthlyFee = finalMonthlyCostEl.textContent;
             const giftAmount = giftTotalEl.textContent;
             const installFee = installationCostResultEl.textContent;
-            const installTime = document.querySelector('input[name="installationTime"]:checked').value;
+            const installTime = installTimeParam; // Use passed parameter
             
             let installFeeForWeekendMessage = "";
             const hasInternet = internetPlanEl.value !== 'none';
@@ -1529,13 +1534,22 @@
             if (firstTvText !== "미선택") productDescriptionMemo += ` + ${firstTvText}`;
             productDescriptionMemo += additionalTvText;
             if (phoneText !== "미선택") productDescriptionMemo += ` + ${phoneText}`;
+            const wifiName = wifiRouterRentalEl.options[wifiRouterRentalEl.selectedIndex].dataset.name;
+            if (wifiName !== "KT공유기 X") {
+                 productDescriptionMemo += ` + ${wifiName}`;
+            }
 
 
-            memoScriptEl.value = `1. 상품 : ${productDescriptionMemo}
+            memoScriptEl.value = `[KT 미소 상담 메모]
+1. 상품 : ${productDescriptionMemo}
 2. 요금 : ${monthlyFee}원 ${displayModeTextParam}
-3. 사은품 : ${giftAmount}원
-4. 설치비 : ${installFee}원
-5. 기타 : 이사 여부 [  ] / 희망설치일자 [    년   월   일]`;
+3. 사은품 총액 : ${giftAmount}원 (기본 ${ ( (parseInt(giftCashEl.textContent.replace(/,/g, '')) || 0) + (parseInt(giftVoucherEl.textContent.replace(/,/g, '')) || 0) + (parseInt(giftPhoneVoucherEl.textContent.replace(/,/g, '')) || 0) + (parseInt(giftAdditionalTvEl.textContent.replace(/,/g, '')) || 0) ).toLocaleString() }원 + 동판추가(모바일연동) ${giftDongpanAdditionalCashKtEl.textContent}원) (예상)
+4. 설치비 : ${installFee}원 (${installTime === 'weekday' ? '평일' : '주말/야간'}) (KT 실제 비용 확인 필요, 주말/야간 할증 가능)
+5. 결합적용시점: ${document.querySelector('input[name="displayModeKt"]:checked').parentElement.textContent.trim().split(' (')[0]}
+6. 기타 : 이사 여부 [ ] / 희망설치일자 [    년   월   일]
+7. 할인유형: ${selectedDiscountTypeEl.textContent}
+9. 모바일결합회선: ${mobileLinesCountEl.value}개
+10. 동판판매가적용: ${dongpanSalesCheckKtEl.checked ? 'Y' : 'N'}`;
             
             let productDescriptionInfo = `▶️ ${internetPlanText}`;
             if (firstTvText !== "미선택") productDescriptionInfo += `\n▶️ ${firstTvText}`;
