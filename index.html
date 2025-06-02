@@ -8,16 +8,8 @@
     <!-- Application Structure Plan: 
         Single-page interactive calculator for KT.
         Updates:
-        1. Premium Single Bundle details: Added "Mobile Final Billed Amount" and updated mobile discount text format.
-        2. Premium Family Bundle details: 
-           - Internet discount now based on first mobile line >= 77,000 KRW and internet >= 500Mbps.
-           - Detailed mobile discount breakdown:
-             - Line 1 (Base, >=77k): 5,500 fixed + 25% selective contract.
-             - Line 2 (Add. High-Tier, >=77k & checked): 25% premium family + 25% selective contract.
-             - Lines 3-7 (IF L1 & L2 are high-tier):
-               - If line >=77k & checked: Same as Line 2.
-               - Else (line <77k or not checked): Sum these lines' fees, then apply one mobile_discount from kt_total_mobile_fee_discounts based on this sum.
-        3. Synchronized Premium Family internet discount logic in calculateAndDisplayResults.
+        1. Corrected internet discount calculation for MVNO Bundle with 100M internet in `calculateAndDisplayResults`.
+        2. Ensured `updateMvnoDetails` also uses consistent key lookup for 100M MVNO discount.
     -->
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; /* slate-50 */ }
@@ -1141,17 +1133,17 @@
                 // Lines 3 to 7
                 let sumOfLowerTierLinesAfterLine2 = 0;
                 let lowerTierLinesDetails = [];
-                if (firstMobileIsHighTierEligible && secondMobileIsHighTierEligible) {
+                if (firstMobileIsHighTierEligible && secondMobileIsHighTierEligible) { // Only apply further discounts if first two lines meet criteria
                     for (let i = 2; i < numMobileLines; i++) {
                         const lineCost = mobileLinesDataForDetails[i].cost;
                         const isHighTierChecked = mobileLinesDataForDetails[i].isHighTier;
-                        if (lineCost >= 77000 && isHighTierChecked) {
+                        if (lineCost >= 77000 && isHighTierChecked) { // High-tier line 3+
                             const premiumMobileDiscount = lineCost * 0.25;
                             const selectiveContractMobileDiscount = lineCost * 0.25;
                             const lineTotalDiscount = premiumMobileDiscount + selectiveContractMobileDiscount;
                             totalCalculatedMobileDiscount += lineTotalDiscount;
                             mobileDiscountDetailsHtml += `<p class="text-xs">회선 ${i + 1} (${lineCost.toLocaleString()}원): ${lineTotalDiscount.toLocaleString()}원 할인 (프리미엄 ${premiumMobileDiscount.toLocaleString()} + 선택약정 ${selectiveContractMobileDiscount.toLocaleString()}원)</p>`;
-                        } else {
+                        } else { // Lower-tier line 3+
                             sumOfLowerTierLinesAfterLine2 += lineCost;
                             lowerTierLinesDetails.push(`회선 ${i + 1} (${lineCost.toLocaleString()}원)`);
                         }
@@ -1167,7 +1159,7 @@
                         else if (sumOfLowerTierLinesAfterLine2 < 174900) { mobileTierKeyForJson = "tier5_141900_to_174899"; }
                         else { mobileTierKeyForJson = "tier6_over_174900"; }
                         
-                        const internetSpeedKeyForJson = (currentInternet.speed >= 500) ? "500M_1G" : "100M";
+                        const internetSpeedKeyForJson = (currentInternet.speed >= 500) ? "500M_1G" : "100M"; // Assuming 500M/1G for this json lookup
 
                         if (mobileTierKeyForJson && kt_total_mobile_fee_discounts?.[internetSpeedKeyForJson]?.[mobileTierKeyForJson]) {
                             jsonMobileDiscount = kt_total_mobile_fee_discounts[internetSpeedKeyForJson][mobileTierKeyForJson].mobile_discount || 0;
@@ -1278,12 +1270,9 @@
                 else if (currentInternet.speed >= 1000) speedKey = "1G";
 
                 if (speedKey) {
-                    if (speedKey === "100M") {
-                        internetDiscount = newKtDiscountRules.알뜰폰결합?.["100M_단독_번들"] || 0; 
-                    } else {
-                        const bundleKey = isBundled ? "_TV" : "_단독";
-                        internetDiscount = newKtDiscountRules.알뜰폰결합?.[speedKey + bundleKey] || 0;
-                    }
+                    const bundleKey = isBundled ? "_TV" : "_단독";
+                    const fullKey = speedKey + bundleKey;
+                    internetDiscount = newKtDiscountRules.알뜰폰결합?.[fullKey] || 0;
                 }
             }
             if(detailMvnoInternetDiscountEl) detailMvnoInternetDiscountEl.textContent = internetDiscount.toLocaleString();
@@ -1377,7 +1366,7 @@
                         }
 
                     } else if (discountType === 'premiumFamilyBundle') {
-                        if (numMobileLines > 0 && mobileLinesData.length > 0 && (mobileLinesData[0].cost >= 77000) && currentInternet.speed >= 500) {
+                         if (numMobileLines > 0 && mobileLinesData.length > 0 && (mobileLinesData[0].cost >= 77000) && currentInternet.speed >= 500) {
                             const bundleTypeForDiscountRule = isTvOrPhoneBundled ? "_TV" : "_단독";
                             const speedKeyPart = currentInternet.speed >= 1000 ? "1G" : "500M";
                             const fullKey = speedKeyPart + bundleTypeForDiscountRule;
@@ -1400,12 +1389,9 @@
                         else if (currentInternet.speed >= 1000) speedKey = "1G";
 
                         if (speedKey) {
-                            if (speedKey === "100M") {
-                                specificBundleInternetDiscountVal = parseFloat(newKtDiscountRules.알뜰폰결합?.["100M_단독_번들"]) || 0;
-                            } else {
-                                const bundleTypeForDiscountRule = isTvOrPhoneBundled ? "_TV" : "_단독";
-                                specificBundleInternetDiscountVal = parseFloat(newKtDiscountRules.알뜰폰결합?.[speedKey + bundleTypeForDiscountRule]) || 0;
-                            }
+                            const bundleTypeForDiscountRule = isTvOrPhoneBundled ? "_TV" : "_단독";
+                            const fullKey = speedKey + bundleTypeForDiscountRule;
+                            specificBundleInternetDiscountVal = parseFloat(newKtDiscountRules.알뜰폰결합?.[fullKey]) || 0;
                         }
                     } else if (discountType === 'familyBundle') { 
                         let speedKey = "";
