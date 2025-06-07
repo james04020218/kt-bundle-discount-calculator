@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KT 결합 할인 계산기</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Application Structure Plan: 
-        Single-page interactive calculator for KT.
-        Updates:
-        1. Corrected internet discount calculation for MVNO Bundle with 100M internet in `calculateAndDisplayResults`.
-        2. Ensured `updateMvnoDetails` also uses consistent key lookup for 100M MVNO discount.
+    <!-- Application Structure Plan:
+         Single-page interactive calculator for KT.
+         Updates:
+         1. Added a 'Reset' button next to the 'Calculate' button.
+         2. Created a `resetCalculator` function that calls `setInitialDefaults` and hides the result/message sections.
+         3. Attached an event listener to the new reset button.
     -->
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; /* slate-50 */ }
@@ -20,7 +21,7 @@
         .input-field:disabled, .select-field:disabled { background-color: #e2e8f0; /* slate-200 */ cursor: not-allowed; }
         .btn-primary { background-color: #0ea5e9; /* sky-500 */ color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.3s ease; }
         .btn-primary:hover { background-color: #0284c7; /* sky-600 */ }
-        .btn-secondary { background-color: #64748b; /* slate-500 */ color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 500; transition: background-color 0.3s ease; }
+        .btn-secondary { background-color: #64748b; /* slate-500 */ color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.3s ease; }
         .btn-secondary:hover { background-color: #475569; /* slate-600 */ }
         .section-title { font-size: 1.5rem; font-weight: 700; color: #0369a1; /* sky-700 */ margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #38bdf8 /* sky-400 */;}
         .result-card { background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); margin-bottom: 1.5rem; }
@@ -99,9 +100,9 @@
                 <div class="input-group">
                     <label for="wifiRouterRental" class="input-label block mb-1">와이파이 공유기</label>
                      <select id="wifiRouterRental" class="select-field">
-                        <option value="1100" data-name="KT공유기">KT공유기 (월 1,100원)</option>
-                        <option value="0" data-name="KT공유기 무료 (인단독 1GB)">KT공유기 무료 (인단독 1GB 시)</option>
-                        <option value="0" data-name="KT공유기 X">KT공유기 X (미사용)</option>
+                         <option value="1100" data-name="KT공유기">KT공유기 (월 1,100원)</option>
+                         <option value="0" data-name="KT공유기 무료 (인단독 1GB)">KT공유기 무료 (인단독 1GB 시)</option>
+                         <option value="0" data-name="KT공유기 X">KT공유기 X (미사용)</option>
                     </select>
                 </div>
 
@@ -383,8 +384,9 @@
             </div>
         </section>
 
-        <div class="text-center mb-8">
+        <div class="text-center mb-8 flex justify-center items-center">
             <button id="calculateButton" class="btn-primary text-lg">예상 요금 계산하기</button>
+            <button id="resetButton" class="btn-secondary text-lg ml-4">초기화</button>
         </div>
 
         <section id="resultSection" class="hidden">
@@ -522,7 +524,7 @@
             "KT인터넷(단독) 1GB": { basePrice: 38500, speed: 1000, type: "1G" },
             "KT인터넷번들100mb": { basePrice: 22000, speed: 100, type: "100M" }, 
             "KT인터넷번들500mb": { basePrice: 27500, speed: 500, type: "500M" }, 
-            "KT인터넷번들1GB": { basePrice: 33000, speed: 1000, type: "1G" }   
+            "KT인터넷번들1GB": { basePrice: 33000, speed: 1000, type: "1G" }  
         };
 
         const tvPlans_KT = { 
@@ -581,7 +583,7 @@
                 "500M_단독": 5500, "1G_단독": 11000 
             },
             "프리미엄싱글결합": { 
-                "500M_단독": 5500, "1G_단독": 5500    
+                "500M_단독": 5500, "1G_단독": 5500   
             },
             "패밀리결합": { 
                 "100M_TV": 5500, "100M_단독": 5500,
@@ -658,20 +660,20 @@
         
         const kt_total_mobile_fee_discounts = {
             "100M": {
-              "tier1_under_22000": { "internet_discount": 1650, "mobile_discount": 0, "total_discount": 1650 },
-              "tier2_22000_to_64899": { "internet_discount": 3300, "mobile_discount": 0, "total_discount": 3300 },
-              "tier3_64900_to_108899": { "internet_discount": 5500, "mobile_discount": 3300, "total_discount": 8800 },
-              "tier4_108900_to_141899": { "internet_discount": 5500, "mobile_discount": 14300, "total_discount": 19800 },
-              "tier5_141900_to_174899": { "internet_discount": 5500, "mobile_discount": 18700, "total_discount": 24200 },
-              "tier6_over_174900": { "internet_discount": 5500, "mobile_discount": 23100, "total_discount": 28600 }
+                "tier1_under_22000": { "internet_discount": 1650, "mobile_discount": 0, "total_discount": 1650 },
+                "tier2_22000_to_64899": { "internet_discount": 3300, "mobile_discount": 0, "total_discount": 3300 },
+                "tier3_64900_to_108899": { "internet_discount": 5500, "mobile_discount": 3300, "total_discount": 8800 },
+                "tier4_108900_to_141899": { "internet_discount": 5500, "mobile_discount": 14300, "total_discount": 19800 },
+                "tier5_141900_to_174899": { "internet_discount": 5500, "mobile_discount": 18700, "total_discount": 24200 },
+                "tier6_over_174900": { "internet_discount": 5500, "mobile_discount": 23100, "total_discount": 28600 }
             },
             "500M_1G": { 
-              "tier1_under_22000": { "internet_discount": 2200, "mobile_discount": 0, "total_discount": 2200 },
-              "tier2_22000_to_64899": { "internet_discount": 5500, "mobile_discount": 5500, "total_discount": 11000 },
-              "tier3_64900_to_108899": { "internet_discount": 5500, "mobile_discount": 5500, "total_discount": 11000 }, 
-              "tier4_108900_to_141899": { "internet_discount": 5500, "mobile_discount": 16610, "total_discount": 22110 },
-              "tier5_141900_to_174899": { "internet_discount": 5500, "mobile_discount": 22100, "total_discount": 27610 },
-              "tier6_over_174900": { "internet_discount": 5500, "mobile_discount": 27610, "total_discount": 33110 }
+                "tier1_under_22000": { "internet_discount": 2200, "mobile_discount": 0, "total_discount": 2200 },
+                "tier2_22000_to_64899": { "internet_discount": 5500, "mobile_discount": 5500, "total_discount": 11000 },
+                "tier3_64900_to_108899": { "internet_discount": 5500, "mobile_discount": 5500, "total_discount": 11000 }, 
+                "tier4_108900_to_141899": { "internet_discount": 5500, "mobile_discount": 16610, "total_discount": 22110 },
+                "tier5_141900_to_174899": { "internet_discount": 5500, "mobile_discount": 22100, "total_discount": 27610 },
+                "tier6_over_174900": { "internet_discount": 5500, "mobile_discount": 27610, "total_discount": 33110 }
             }
         };
 
@@ -722,6 +724,7 @@
         const detailMvnoInternetDiscountEl = document.getElementById('detailMvnoInternetDiscount'); 
 
         const calculateButton = document.getElementById('calculateButton');
+        const resetButton = document.getElementById('resetButton'); // Reset button added
         const resultSection = document.getElementById('resultSection');
         
         const selectedInternetEl = document.getElementById('selectedInternet');
@@ -775,14 +778,16 @@
 
         mobileLinesCountEl.addEventListener('input', updateMobileLinesInputs);
         calculateButton.addEventListener('click', calculateAndDisplayResults);
+        resetButton.addEventListener('click', resetCalculator); // Event listener for reset button
+
         if(dongpanSalesCheckKtEl) {
             dongpanSalesCheckKtEl.addEventListener('change', function() {
                 if (dongpanPolicyDetailsContainerKtEl) {
                     dongpanPolicyDetailsContainerKtEl.classList.toggle('hidden', !this.checked);
                 }
                  if (!resultSection.classList.contains('hidden')) { 
-                    calculateAndDisplayResults(); 
-                }
+                     calculateAndDisplayResults(); 
+                 }
             });
         }
         
@@ -900,7 +905,7 @@
                 phonePlanEl.value = "none"; 
             } else { 
                  if (tvPlanEl.value === "none") { 
-                    tvPlanEl.value = "KTTV베이직";
+                     tvPlanEl.value = "KTTV베이직";
                  }
             }
             const tvChangeEvent = new Event('change');
@@ -942,7 +947,7 @@
                 });
                  if (wifiRouterRentalEl.options[wifiRouterRentalEl.selectedIndex]?.dataset.name === "KT공유기 무료 (인단독 1GB)") {
                      if(noWifiOption) wifiRouterRentalEl.value = noWifiOption.value;
-                }
+                 }
             }
         });
 
@@ -1329,8 +1334,8 @@
 
                 if (internetPlanName !== 'none') {
                      if (currentInternet.speed >= 1000 && internetType === 'standalone' && selectedWifiOptionName === "KT공유기 무료 (인단독 1GB)") {
-                         actualWifiRouterFee = 0; 
-                    } else if (wifiOptions_KT[selectedWifiOptionName]) {
+                          actualWifiRouterFee = 0; 
+                     } else if (wifiOptions_KT[selectedWifiOptionName]) {
                         actualWifiRouterFee = parseFloat(wifiOptions_KT[selectedWifiOptionName].fee) || 0;
                     }
                 }
@@ -1353,9 +1358,9 @@
 
                         if (numMobileLines > 0 && totalMobileBaseCost > 0) {
                              if (internetSpeedType === "100M") {
-                               mobileTierKey = getMobileTierKey(totalMobileBaseCost, numMobileLines, internetSpeedType);
+                                mobileTierKey = getMobileTierKey(totalMobileBaseCost, numMobileLines, internetSpeedType);
                             } else {
-                               mobileTierKey = getMobileTierKeyFor500MUp(totalMobileBaseCost, numMobileLines);
+                                mobileTierKey = getMobileTierKeyFor500MUp(totalMobileBaseCost, numMobileLines);
                             }
                         }
                         
@@ -1445,9 +1450,9 @@
                 let additionalTvComponentCost_NoDiscount = 0;
                 let additionalTvComponentCost_WithDiscount = 0; 
                 if (additionalTvPlanKey !== 'none' && additionalTvPlans_KT[additionalTvPlanKey]) {
-                     additionalTvCost = parseFloat(additionalTvPlans_KT[additionalTvPlanKey].basePrice) || 0;
-                     additionalTvComponentCost_NoDiscount = additionalTvCost;
-                     additionalTvComponentCost_WithDiscount = additionalTvCost;
+                      additionalTvCost = parseFloat(additionalTvPlans_KT[additionalTvPlanKey].basePrice) || 0;
+                      additionalTvComponentCost_NoDiscount = additionalTvCost;
+                      additionalTvComponentCost_WithDiscount = additionalTvCost;
                 }
 
                 let finalPhoneComponentCost_NoDiscount = 0;
@@ -1609,10 +1614,10 @@
                              else if (mobileLineFee >= 90000 && mobileLineFee <= 110000) mobileFeeTierKey = "90K";
 
                              if (mobileFeeTierKey && internetGiftKeyPart) {
-                                const giftKey = internetGiftKeyPart + "_" + dongpanBundleType;
-                                if (dongpanAdditionalGiftTable_KT[mobileFeeTierKey] && dongpanAdditionalGiftTable_KT[mobileFeeTierKey][giftKey]) {
-                                    giftDongpanAdditionalCashAmount += dongpanAdditionalGiftTable_KT[mobileFeeTierKey][giftKey];
-                                }
+                                 const giftKey = internetGiftKeyPart + "_" + dongpanBundleType;
+                                 if (dongpanAdditionalGiftTable_KT[mobileFeeTierKey] && dongpanAdditionalGiftTable_KT[mobileFeeTierKey][giftKey]) {
+                                     giftDongpanAdditionalCashAmount += dongpanAdditionalGiftTable_KT[mobileFeeTierKey][giftKey];
+                                 }
                             }
                         }
                     }
@@ -1727,7 +1732,7 @@
 3. 사은품 총액 : ${giftAmount}원 (기본 ${baseGift.toLocaleString()}원 + 동판추가(모바일연동) ${dongpanGift.toLocaleString()}원) (예상)
 4. 설치비 : ${installFee}원 (${installTime === 'weekday' ? '평일' : '주말/야간'}) (KT 실제 비용 확인 필요, 주말/야간 할증 가능)
 5. 결합적용시점: ${document.querySelector('input[name="displayModeKt"]:checked').parentElement.textContent.trim().split(' (')[0]}
-6. 기타 : 이사 여부 [ ] / 희망설치일자 [    년   월   일]
+6. 기타 : 이사 여부 [ ] / 희망설치일자 [   년   월   일]
 7. 할인유형: ${selectedDiscountTypeEl.textContent}
 9. 모바일결합회선: ${numMobileLinesParam}개
 10. 동판판매가적용: ${isDongpanCheckedParam ? 'Y' : 'N'}`;
@@ -1825,7 +1830,7 @@ https://miso.kr/booking/forms/secure-details?querystring=고객님 전화번호`
             tvPlanEl.value = "KTTV베이직"; 
             additionalTvPlanEl.value = "none"; 
             phonePlanEl.value = "none"; 
-            wifiRouterRentalEl.value = "0"; 
+            wifiRouterRentalEl.value = "1100"; 
             
             const addonCheckboxes = document.querySelectorAll('#addonServicesContainer input[type="checkbox"]');
             addonCheckboxes.forEach(cb => cb.checked = false);
@@ -1836,8 +1841,8 @@ https://miso.kr/booking/forms/secure-details?querystring=고객님 전화번호`
             document.querySelector('input[name="displayModeKt"][value="preApplied"]').checked = true; 
             document.querySelector('input[name="installationTime"][value="weekday"]').checked = true;
              if (dongpanSalesCheckKtEl) {
-                 dongpanSalesCheckKtEl.checked = false;
-                if(dongpanPolicyDetailsContainerKtEl) dongpanPolicyDetailsContainerKtEl.classList.add('hidden');
+                  dongpanSalesCheckKtEl.checked = false;
+                 if(dongpanPolicyDetailsContainerKtEl) dongpanPolicyDetailsContainerKtEl.classList.add('hidden');
              }
 
 
@@ -1853,7 +1858,7 @@ https://miso.kr/booking/forms/secure-details?querystring=고객님 전화번호`
                     }
                     section.containerEl.classList.toggle('hidden', !shouldBeVisible);
                      if (shouldBeVisible && section.updateFn) { 
-                        section.updateFn();
+                         section.updateFn();
                     }
                 }
             });
@@ -1861,6 +1866,14 @@ https://miso.kr/booking/forms/secure-details?querystring=고객님 전화번호`
             document.querySelector('input[name="internetType"]:checked').dispatchEvent(internetTypeChangeEvent);
             const discountTypeChangeEvent = new Event('change'); 
             document.querySelector('input[name="discountType"]:checked').dispatchEvent(discountTypeChangeEvent);
+        }
+
+        // Function to reset the entire calculator form
+        function resetCalculator() {
+            setInitialDefaults(); // Reset all form fields to their default values
+            resultSection.classList.add('hidden'); // Hide the result section
+            messageScriptSection.classList.add('hidden'); // Hide the message script section
+            window.scrollTo(0, 0); // Scroll to the top of the page
         }
         
         window.onload = setInitialDefaults;
