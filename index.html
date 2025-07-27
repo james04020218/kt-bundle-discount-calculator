@@ -1031,7 +1031,7 @@
                                     선택약정
                                 </label>
                                 <select id="mobilePlan${i}" class="input-field mobile-plan-select flex-grow">
-                                    <option value="0" data-name="미선택" data-url="">요금제 선택</option>
+                                    <option value="0" data-name="요금제 선택없음" data-url="">요금제 선택없음</option>
                                     ${mobilePlans_KT.map(plan => `
                                         <option value="${plan.price}" data-name="${plan.name}" data-url="${plan.url}">
                                             ${plan.name} (${plan.price.toLocaleString()}원)
@@ -1044,20 +1044,13 @@
                 mobileLinesContainerEl.appendChild(div);
         
                 const newSelect = document.getElementById(`mobilePlan${i}`);
-                if (selectedDiscountType === 'premiumFamilyBundle') {
-                    if (i < 2) { // 1st and 2nd lines
-                        newSelect.value = "80000"; 
-                    } else { // 3rd line and up
-                        newSelect.value = "69000"; // [MODIFIED] Default to 69,000 KRW plan
-                    }
+                if (i === 0 && ['totalAmountBundle', 'premiumFamilyBundle', 'separateFamilyBundle'].includes(selectedDiscountType)) {
+                    newSelect.value = "0";
+                } else if (selectedDiscountType === 'premiumFamilyBundle') {
+                    if (i === 1) { newSelect.value = "80000"; }
+                    else if (i > 1) { newSelect.value = "69000"; }
                 } else if (selectedDiscountType === 'premiumSingleBundle') {
-                     if (i === 0) { // 1st line
-                        newSelect.value = "80000";
-                     }
-                } else if (selectedDiscountType === 'totalAmountBundle') {
-                    if (i === 0) {
-                        newSelect.value = "37000";
-                    }
+                    if (i === 0) { newSelect.value = "80000"; }
                 }
             }
             
@@ -1621,7 +1614,7 @@
                     isDongpanChecked,
                     numMobileLines,
                     totalPreDiscountCost: finalInternetComponentCost_NoDiscount,
-                    finalMonthlyCost: finalMonthlyDisplayCost, // <--- ERROR FIX
+                    finalMonthlyCost: finalMonthlyDisplayCost,
                     installFee: installInfo.fee,
                     mobileLinesDetails: mobileLinesDetailsForScript,
                     wifiDetails: selectedWifiData,
@@ -1665,14 +1658,19 @@
             
             let productDescriptionMemo = internetPlanText;
             if (wifiName !== "KT공유기 X") productDescriptionMemo += ` + ${wifiName}`;
-            if (firstTvText !== "미선택") productDescriptionMemo += ` + ${tvOption.text.split(' (')[0]}`;
+            if (tvOption.value !== 'none') {
+                const tvPlanInfo = tvPlans_KT[tvOption.value];
+                if (tvPlanInfo) {
+                    productDescriptionMemo += ` + ${tvOption.text.split(' (')[0]} + ${tvPlanInfo.stbIncluded}`;
+                }
+            }
             productDescriptionMemo += additionalTvText;
             if (phoneText !== "미선택") productDescriptionMemo += ` + ${phoneText}`;
             
             const memoFinalCost = finalMonthlyCost.toLocaleString();
             const memoPreDiscountCost = totalPreDiscountCost.toLocaleString();
             
-            const mobilePlanNamesForMemo = mobileLinesDetails.map(line => line.name).join(', ') || '없음';
+            const mobilePlanNamesForMemo = mobileLinesDetails.filter(line => line.cost > 0).map(line => line.name).join(', ') || '없음';
 
             memoScriptEl.value = `[KT 미소 상담 메모]
 1. 상품 : ${productDescriptionMemo}
@@ -1722,19 +1720,18 @@
                 }
             }
             
-            if (mobileLinesDetails.length > 0) {
+            const actualMobileLines = mobileLinesDetails.filter(line => line.cost > 0);
+            if (actualMobileLines.length > 0) {
                 infoScriptContent += `\n\n[결합 모바일]`;
-                mobileLinesDetails.forEach(line => {
-                    if (line.cost > 0) {
-                        let discountText = '';
-                        if (line.totalAmountLineDiscount > 0) discountText += ` - ${line.totalAmountLineDiscount.toLocaleString()} (총액)`;
-                        if (line.bundleDiscount > 0) discountText += ` - ${line.bundleDiscount.toLocaleString()} (결합)`;
-                        if (line.selectiveDiscount > 0) discountText += ` - ${line.selectiveDiscount.toLocaleString()} (선약)`;
-                        
-                        infoScriptContent += `\n▶️ ${line.name} (${line.cost.toLocaleString()}원)${discountText} = 최종 ${line.finalBill.toLocaleString()}원`;
-                        if (line.url) {
-                            infoScriptContent += `\n   (정보: ${line.url})`;
-                        }
+                actualMobileLines.forEach(line => {
+                    let discountText = '';
+                    if (line.totalAmountLineDiscount > 0) discountText += ` - ${line.totalAmountLineDiscount.toLocaleString()} (총액)`;
+                    if (line.bundleDiscount > 0) discountText += ` - ${line.bundleDiscount.toLocaleString()} (결합)`;
+                    if (line.selectiveDiscount > 0) discountText += ` - ${line.selectiveDiscount.toLocaleString()} (선약)`;
+                    
+                    infoScriptContent += `\n▶️ ${line.name} (${line.cost.toLocaleString()}원)${discountText} = 최종 ${line.finalBill.toLocaleString()}원`;
+                    if (line.url) {
+                        infoScriptContent += `\n   (정보: ${line.url})`;
                     }
                 });
             }
