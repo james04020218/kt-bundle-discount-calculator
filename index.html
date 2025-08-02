@@ -137,9 +137,9 @@
                     <label for="phonePlan" class="input-label">집전화 요금제</label>
                     <select id="phonePlan" class="select-field">
                         <option value="none">선택 안함</option>
-                        <option value="KT일반 전화일반 전화" data-price="6050">KT일반 전화일반 전화 (월 6,050원)</option>
-                        <option value="KT일반 전화인터넷 전화 (모임스톤)" data-price="5940">KT일반 전화인터넷 전화 (모임스톤) (월 5,940원)</option>
-                        <option value="KT일반 전화인터넷 (단독) 500mb 이상 + 인터넷 전화" data-price="3850">KT일반 전화인터넷 (단독) 500mb 이상 + 인터넷 전화 (월 3,850원, 패밀리 중복불가)</option>
+                        <option value="인터넷전화 우리끼리3000" data-price="6294">우리끼리3000 (월 6,294원)</option>
+                        <option value="집전화 유선3000" data-price="8494">유선3000 (월 8,494원)</option>
+                        <option value="집전화 유무선3000" data-price="8250">유무선3000 (월 8,250원)</option>
                     </select>
                 </div>
             </div>
@@ -467,9 +467,9 @@
         };
         
         const phonePlans_KT = {
-            "KT일반 전화일반 전화": { basePrice: 6050 },
-            "KT일반 전화인터넷 전화 (모임스톤)": { basePrice: 5940 },
-            "KT일반 전화인터넷 (단독) 500mb 이상 + 인터넷 전화": { basePrice: 3850 }
+            "인터넷전화 우리끼리3000": { basePrice: 6294 },
+            "집전화 유선3000": { basePrice: 8494 },
+            "집전화 유무선3000": { basePrice: 8250 }
         };
         
         const wifiOptions_KT = {
@@ -552,10 +552,6 @@
                 "100M_TV": 3300, "100M_단독": 3300,
                 "500M_TV": 5500, "500M_단독": 11000,
                 "1G_TV": 5500,   "1G_단독": 11000
-            },
-            "따로살아도 가족결합": {
-                "500M_TV": { "모바일_22000미만": 9900, "모바일_22000이상": 13200, "tvDiscount": 2200 },
-                "1G_TV": { "모바일_22000미만": 11000, "모바일_22000이상": 14300, "tvDiscount": 3300 }
             }
         };
         
@@ -999,6 +995,7 @@
                     wifiRouterRentalEl.disabled = true;
                 }
             }
+            updateDiscountTypeAvailability();
         });
         
         
@@ -1016,8 +1013,15 @@
         
         function updateMobileLinesInputs() {
             const count = parseInt(mobileLinesCountEl.value) || 0;
-            mobileLinesContainerEl.innerHTML = '';
             const selectedDiscountType = document.querySelector('input[name="discountType"]:checked').value;
+
+            // Store current values before clearing
+            const currentValues = [];
+            document.querySelectorAll('.mobile-plan-select').forEach(select => {
+                currentValues.push(select.value);
+            });
+
+            mobileLinesContainerEl.innerHTML = '';
         
             for (let i = 0; i < count; i++) {
                 const div = document.createElement('div');
@@ -1044,13 +1048,21 @@
                 mobileLinesContainerEl.appendChild(div);
         
                 const newSelect = document.getElementById(`mobilePlan${i}`);
-                if (i === 0 && ['totalAmountBundle', 'premiumFamilyBundle', 'separateFamilyBundle'].includes(selectedDiscountType)) {
+                
+                let defaultValueSet = false;
+
+                if (i === 0 && ['totalAmountBundle', 'premiumFamilyBundle'].includes(selectedDiscountType)) {
                     newSelect.value = "0";
+                    defaultValueSet = true;
                 } else if (selectedDiscountType === 'premiumFamilyBundle') {
-                    if (i === 1) { newSelect.value = "80000"; }
-                    else if (i > 1) { newSelect.value = "69000"; }
+                    if (i === 1) { newSelect.value = "80000"; defaultValueSet = true; }
+                    else if (i > 1) { newSelect.value = "69000"; defaultValueSet = true; }
                 } else if (selectedDiscountType === 'premiumSingleBundle') {
-                    if (i === 0) { newSelect.value = "80000"; }
+                    if (i === 0) { newSelect.value = "80000"; defaultValueSet = true; }
+                }
+
+                if (!defaultValueSet && currentValues[i]) {
+                    newSelect.value = currentValues[i];
                 }
             }
             
@@ -1061,10 +1073,12 @@
                     if (section && section.toggleEl.checked && section.updateFn) {
                         section.updateFn();
                     }
+                    updateDiscountTypeAvailability();
                 });
             });
         
             updateMobilePlanOptions();
+            updateDiscountTypeAvailability();
         }
         
         
@@ -1083,7 +1097,12 @@
         }
         
         function getMobileTierKey(totalMobileBaseCost, numMobileLines, internetSpeedType) {
+            const discountType = document.querySelector('input[name="discountType"]:checked').value;
+            if (numMobileLines > 0 && totalMobileBaseCost === 0 && discountType === 'totalAmountBundle') {
+                 totalMobileBaseCost = 37000;
+            }
             if (numMobileLines === 0 || totalMobileBaseCost === 0) return null;
+
             if (internetSpeedType === "100M") {
                 if (totalMobileBaseCost < 22000) return "모바일_22000미만";
                 if (totalMobileBaseCost < 64900) return "모바일_64900미만";
@@ -1182,17 +1201,16 @@
         function updateSeparateFamilyDetails() {
             separateFamilyDetailsContainerEl.innerHTML = `
                 <h4 class="font-semibold text-sm mb-2 text-slate-700">따로 살아도 가족결합 상세 정보</h4>
-                <p class="text-xs text-slate-600 mb-2">가족관계증명서로 증빙 가능한 가족이 따로 살면서 인터넷+TV와 모바일을 결합할 때 적용됩니다.</p>
+                <p class="text-xs text-slate-600 mb-2">[선결, 개통 후 익월 말까지 가능] (인5+TV5+휴10)</p>
                 <ul class="list-disc list-inside text-xs space-y-1">
-                    <li><strong>조건:</strong> 500M 이상 인터넷 + TV + 모바일 1회선 이상</li>
-                     <li><strong>인터넷+TV 할인:</strong>
-                        <ul class="list-circle list-inside ml-4">
-                            <li><strong>500M:</strong> 9,900원(인터넷) + 2,200원(TV) = 총 12,100원 할인</li>
-                            <li><strong>1G:</strong> 11,000원(인터넷) + 3,300원(TV) = 총 14,300원 할인</li>
-                        </ul>
-                    </li>
-                     <li><strong>모바일 할인:</strong> 없음</li>
-                    <li><strong>참고:</strong> 100M 인터넷 또는 인터넷 단독은 결합 불가</li>
+                    <li>베이스회선 명의자 신분증 및 가족관계증명서 첨부 필수</li>
+                    <li>100M 인/티 할인 X, 500M 2,200원 인/티 각각 할인 , 1G 3,300원 인/티 각각 할인</li>
+                    <li><strong>조건:</strong> 베이스 회선 인 1 + 모 1 지정 필수 / 베이스 회선은 개통일 상관 없이 지정 가능</li>
+                    <li><strong>내용:</strong> 베이스 회선 제외 인터넷 최대 5개 까지 결합 가능 + 모바일 추가 할인</li>
+                    <li>25.03월 이후 인터넷 신규 가입 대상자만 가능 / 직전 가입 대상자는 약정 종료 후 재약정 시 적용 가능</li>
+                    <li>뭉치면올레 결합으로 묶여있는 인터넷은 따살결 베이스로 지정 불가</li>
+                    <li>패밀리 자회선은 중복 적용 불가능!</li>
+                    <li>총액 결합에 추가하는 방식 입니다!</li>
                 </ul>
             `;
         }
@@ -1220,8 +1238,8 @@
             let combinationKey = "";
         
             const phoneSelected = phonePlanName !== 'none';
-            const isGeneralPhone = phoneSelected && phonePlanName.includes("일반 전화");
-            const is070Phone = phoneSelected && phonePlanName.includes("인터넷 전화");
+            const is070Phone = phoneSelected && phonePlanName.includes("인터넷전화");
+            const isGeneralPhone = phoneSelected && !is070Phone;
         
             if (internetSelected && tvSelected && additionalTvSelected) {
                 combinationKey = "인터넷+TV+TV추가";
@@ -1329,7 +1347,12 @@
                     const bundleTypeForDiscountRule = isTvOrPhoneBundled ? "TV" : "단독";
         
                     if (discountType === 'totalAmountBundle') {
-                        let mobileTierKey = getMobileTierKey(totalMobileBaseCost, numMobileLines, internetSpeedType);
+                        let costForDiscountCalc = totalMobileBaseCost;
+                        if (totalMobileBaseCost === 0 && numMobileLines > 0) {
+                            costForDiscountCalc = 37000;
+                        }
+                        let mobileTierKey = getMobileTierKey(costForDiscountCalc, numMobileLines, internetSpeedType);
+                        
                         if (mobileTierKey && newKtDiscountRules.총액결합할인?.[internetSpeedType]?.[bundleTypeForDiscountRule]?.[mobileTierKey]) {
                             internetDiscount = newKtDiscountRules.총액결합할인[internetSpeedType][bundleTypeForDiscountRule][mobileTierKey];
                         } else if (internetSpeedType === "1G" && bundleTypeForDiscountRule === "TV" && newKtDiscountRules.총액결합할인?.["1G"]?.TV?.["모바일_결합시"] && numMobileLines > 0) {
@@ -1351,12 +1374,27 @@
                         const fullKey = internetSpeedType + "_" + bundleTypeForDiscountRule;
                         const rule = discountType === 'mvnoBundle' ? newKtDiscountRules.알뜰폰결합 : newKtDiscountRules.패밀리결합;
                         internetDiscount = rule?.[fullKey] || 0;
-                    } else if (discountType === 'separateFamilyBundle' && isTvOrPhoneBundled) {
-                        let speedKeyFor따살 = (currentInternet.speed === 500) ? "500M_TV" : (currentInternet.speed >= 1000) ? "1G_TV" : "";
-                        let mobileTierKeyFor따살 = getMobileTierKeyForSeparateFamily(totalMobileBaseCost, numMobileLines);
-                        if (speedKeyFor따살 && mobileTierKeyFor따살 && newKtDiscountRules["따로살아도 가족결합"]?.[speedKeyFor따살]?.[mobileTierKeyFor따살]) {
-                            internetDiscount = newKtDiscountRules["따로살아도 가족결합"][speedKeyFor따살][mobileTierKeyFor따살];
-                            currentTvDiscount = newKtDiscountRules["따로살아도 가족결합"][speedKeyFor따살].tvDiscount || 0;
+                    } else if (discountType === 'separateFamilyBundle') {
+                        if (currentInternet.speed >= 500 && totalMobileBaseCost >= 37000) {
+                            let mobileTierKey = getMobileTierKey(totalMobileBaseCost, numMobileLines, internetSpeedType);
+                            if (mobileTierKey) {
+                                if (newKtDiscountRules.총액결합할인?.[internetSpeedType]?.[bundleTypeForDiscountRule]?.[mobileTierKey]) {
+                                    internetDiscount = newKtDiscountRules.총액결합할인[internetSpeedType][bundleTypeForDiscountRule][mobileTierKey];
+                                } else if (internetSpeedType === "1G" && bundleTypeForDiscountRule === "TV" && newKtDiscountRules.총액결합할인?.["1G"]?.TV?.["모바일_결합시"] && numMobileLines > 0) {
+                                    internetDiscount = newKtDiscountRules.총액결합할인["1G"]["TV"]["모바일_결합시"];
+                                }
+                            }
+                            if (currentInternet.speed === 500) {
+                                internetDiscount += 2200;
+                                if (isTvOrPhoneBundled) {
+                                    currentTvDiscount = 2200;
+                                }
+                            } else if (currentInternet.speed >= 1000) {
+                                internetDiscount += 3300;
+                                if (isTvOrPhoneBundled) {
+                                    currentTvDiscount = 3300;
+                                }
+                            }
                         }
                     }
                     internetDiscount = Math.min(internetDiscount, internetBase);
@@ -1878,6 +1916,7 @@ https://miso.kr/booking/forms/secure-details?querystring=고객님 전화번호`
             document.querySelector('input[name="discountType"]:checked').dispatchEvent(new Event('change'));
             
             document.querySelectorAll('.selective-contract-checkbox').forEach(cb => cb.checked = false);
+            updateDiscountTypeAvailability();
         }
         
         function resetCalculator() {
@@ -1891,6 +1930,33 @@ https://miso.kr/booking/forms/secure-details?querystring=고객님 전화번호`
             window.scrollTo(0, 0);
         }
         
+        function updateDiscountTypeAvailability() {
+            const internetOption = internetPlanEl.options[internetPlanEl.selectedIndex];
+            const internetSpeed = internetOption.value !== 'none' ? parseInt(internetOption.dataset.speed) : 0;
+
+            let totalMobileCost = 0;
+            document.querySelectorAll('.mobile-line-item').forEach((item, i) => {
+                const select = item.querySelector(`#mobilePlan${i}`);
+                totalMobileCost += parseInt(select.value) || 0;
+            });
+
+            const separateFamilyRadio = document.querySelector('input[name="discountType"][value="separateFamilyBundle"]');
+            const separateFamilyLabel = separateFamilyRadio.parentElement;
+
+            const isEligible = internetSpeed >= 500 && totalMobileCost >= 37000;
+
+            if (isEligible) {
+                separateFamilyRadio.disabled = false;
+                separateFamilyLabel.classList.remove('text-slate-400', 'cursor-not-allowed');
+            } else {
+                separateFamilyRadio.disabled = true;
+                separateFamilyLabel.classList.add('text-slate-400', 'cursor-not-allowed');
+                if (separateFamilyRadio.checked) {
+                    document.querySelector('input[name="discountType"][value="totalAmountBundle"]').checked = true;
+                }
+            }
+        }
+
         window.onload = setInitialDefaults;
     </script>
 </body>
