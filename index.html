@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KT 결합 할인 계산기 (Gemini AI)</title>
+    <title>KT 결합 할인 계산기 (Gemini AI ✨)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,12 +18,12 @@
 
         .input-group { margin-bottom: 1.5rem; }
         .input-label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #334155; /* slate-700 */ }
-        .input-field, .select-field { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; /* slate-300 */ border-radius: 0.375rem; box-shadow: sm; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
+        .input-field, .select-field { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; /* slate-300 */ border-radius: 0.375rem; box-shadow: sm; transition: border-color: 0.15s ease-in-out, box-shadow: 0.15s ease-in-out; }
         .input-field:focus, .select-field:focus { border-color: #0ea5e9; /* sky-500 */ outline: none; box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.25); }
         .input-field:disabled, .select-field:disabled { background-color: #e2e8f0; /* slate-200 */ cursor: not-allowed; }
-        .btn-primary { background-color: #0ea5e9; /* sky-500 */ color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.3s ease; }
+        .btn-primary { background-color: #0ea5e9; /* sky-500 */ color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color: 0.3s ease; }
         .btn-primary:hover { background-color: #0284c7; /* sky-600 */ }
-        .btn-secondary { background-color: #64748b; /* slate-500 */ color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.3s ease; }
+        .btn-secondary { background-color: #64748b; /* slate-500 */ color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color: 0.3s ease; }
         .btn-secondary:hover { background-color: #475569; /* slate-600 */ }
         .section-title { font-size: 1.5rem; font-weight: 700; color: #0369a1; /* sky-700 */ margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #38bdf8 /* sky-400 */;}
         .result-card { background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); margin-bottom: 1.5rem; }
@@ -465,6 +465,18 @@
                 <div class="flex items-center space-x-4 mb-4">
                     <button id="generateAIPersuasionBtn" class="btn-primary text-sm flex-1">✨ AI로 고객 맞춤 설득 문자 생성</button>
                     <button id="generateAIHappyCallBtn" class="btn-secondary text-sm flex-1">😊 AI로 설치 후 해피콜 문자 생성</button>
+                </div>
+
+                <div class="mt-6 border-t pt-4">
+                    <label for="transcriptInput" class="input-label font-semibold text-slate-700">
+                      📋 고객 상담 내용 붙여넣기 (AI 분석용)
+                    </label>
+                    <textarea id="transcriptInput" class="message-script-area" rows="6" placeholder="이곳에 상담 내용 텍스트를 붙여넣으세요..."></textarea>
+                    <div class="text-right mt-2">
+                        <button id="generateAIPersuasionFromTranscriptBtn" class="btn-primary text-sm">
+                            ✨ 상담 내용으로 AI 설득 문자 생성
+                        </button>
+                    </div>
                 </div>
 
                 <div id="geminiLoading" class="hidden text-center p-4">
@@ -914,6 +926,11 @@
         const geminiResultContainerEl = document.getElementById('geminiResultContainer');
         const geminiResultTextareaEl = document.getElementById('geminiResultTextarea');
 
+        // ▼▼▼ NEW SELECTORS FOR TRANSCRIPT FEATURE ▼▼▼
+        const transcriptInputEl = document.getElementById('transcriptInput');
+        const generateAIPersuasionFromTranscriptBtn = document.getElementById('generateAIPersuasionFromTranscriptBtn');
+        // ▲▲▲ NEW SELECTORS FOR TRANSCRIPT FEATURE ▲▲▲
+
         // ✨ New Button Selector
         const generateComparisonButtonEl = document.getElementById('generateComparisonButton');
 
@@ -989,6 +1006,12 @@
             generateAIHappyCallBtn.addEventListener('click', () => callGeminiAPI('happycall'));
         }
         
+        // ▼▼▼ NEW EVENT LISTENER FOR TRANSCRIPT FEATURE ▼▼▼
+        if (generateAIPersuasionFromTranscriptBtn) {
+            generateAIPersuasionFromTranscriptBtn.addEventListener('click', () => callGeminiAPI('persuasion_transcript'));
+        }
+        // ▲▲▲ NEW EVENT LISTENER FOR TRANSCRIPT FEATURE ▲▲▲
+
         const allDetailSections = [
             { radioValue: 'totalAmountBundle', toggleEl: totalAmountDetailsToggleEl, containerEl: totalAmountDetailsContainerEl, updateFn: updateTotalAmountDetails },
             { radioValue: 'premiumFamilyBundle', toggleEl: premiumFamilyDetailsToggleEl, containerEl: premiumFamilyDetailsContainerEl, updateFn: updatePremiumFamilyDetails },
@@ -2655,9 +2678,29 @@ ${scriptBlock500M}
         async function callGeminiAPI(promptType) {
             geminiLoadingEl.classList.remove('hidden');
             geminiResultContainerEl.classList.add('hidden');
+        
+            // -----------------  [수정] API KEY 입력 -----------------
+            // GitHub에 배포하기 전에, Google Cloud Console에서 발급받은 실제 API 키를 아래에 입력해주세요.
+            // 예: const apiKey = "AIzaSy...";
+            const apiKey = ""; // <--- 여기에 실제 API 키를 입력하세요!
+            // ----------------------------------------------------
 
-            const apiKey = "AIzaSyA7WWNoRfEkKfhg5Y6u85ahXPhzUKKzP34"; // Canvas will provide the key
-
+            if (!apiKey) {
+                 const usePro = confirm("Gemini 2.5 Pro를 사용하려면 API 키가 필요합니다. 지금 바로 Google Cloud에서 API 키를 발급받으시겠습니까?\n\n(취소를 누르면 기본 Flash 모델로 계속 진행됩니다.)");
+                 if (usePro) {
+                     window.open("https://console.cloud.google.com/apis/credentials", "_blank");
+                 }
+                 geminiLoadingEl.classList.add('hidden');
+                 return;
+            }
+        
+            // --- Gather all necessary data from the calculator ---
+            const results = getCalculationResults();
+            const { 
+                internetPlanName, tvPlanName, finalMonthlyCost, maxGiftAmount, confirmedGiftAmount, 
+                discountType, cardDiscountAmount, selectedCardData, finalCostWithCard 
+            } = results;
+        
             const internetOption = internetPlanEl.options[internetPlanEl.selectedIndex];
             const internetPlanText = internetOption.value !== 'none' ? internetOption.text.split(' (')[0] : '인터넷 미선택';
             const tvOption = tvPlanEl.options[tvPlanEl.selectedIndex];
@@ -2667,25 +2710,74 @@ ${scriptBlock500M}
             if(firstTvText) {
                 internetDescription += ` + ${firstTvText}`;
             }
-
-            const finalMonthlyCost = parseInt(document.getElementById('summaryFinalCost').textContent.replace(/[^0-9]/g, '')) || 0;
-            const maxGiftAmountText = document.getElementById('summaryGiftTotal').textContent.trim();
-            const giftBreakdownText = document.getElementById('summaryGiftBreakdown').textContent.trim();
+        
+            const maxGiftAmountText = `${maxGiftAmount.toLocaleString()} 원`;
+            const giftBreakdownText = `(확정 ${confirmedGiftAmount.toLocaleString()}원 + 참여 혜택 70,000원)`;
             const discountTypeName = document.getElementById('selectedDiscountType').textContent;
-
+        
             let systemPrompt = "";
             let userQuery = "";
-
+        
+            // Base info block for the prompt
+            let baseInfo = `[계산된 상품 정보]
+- 추천 상품: ${internetDescription}
+- 최종 월 요금 (결합할인 적용): ${finalMonthlyCost.toLocaleString()}원
+- 최대 사은품 혜택: ${maxGiftAmountText} ${giftBreakdownText}
+- 적용된 핵심 할인: ${discountTypeName}`;
+        
+            // Dynamically add affiliate card info if it exists
+            if (cardDiscountAmount > 0 && selectedCardData) {
+                baseInfo += `
+- 제휴카드 정보: ${selectedCardData.name} 사용 시 월 ${cardDiscountAmount.toLocaleString()}원 추가 할인
+- 카드 적용 최종 월 요금: ${finalCostWithCard.toLocaleString()}원`;
+            }
+        
             if (promptType === 'persuasion') {
                 systemPrompt = "당신은 대한민국 최고의 KT 인터넷 영업 전문가입니다. 고객 상담 후, 가입을 망설이는 고객에게 보낼 짧고 친근하며 설득력 있는 문자 메시지를 작성하는 것이 당신의 임무입니다. 제공된 핵심 혜택을 바탕으로, 상품의 가치를 부드럽게 강조하여 고객이 가입을 완료하도록 유도해주세요. 딱딱한 광고가 아닌, 바로 옆에서 챙겨주는 듯한 자연스러운 톤을 유지하세요. 모든 응답은 반드시 '[미소] 고객님, 안녕하세요! KT미소 인터넷입니다 😊' 라는 문구로 시작해야 합니다.";
-                userQuery = `고객 혜택 정보:\n- 인터넷/TV 상품: ${internetDescription}\n- 최종 월 요금: ${finalMonthlyCost.toLocaleString()}원\n- 최대 사은품 혜택: ${maxGiftAmountText} ${giftBreakdownText}\n- 핵심 할인: ${discountTypeName}\n\n위 정보를 활용하여 고객이 "아, 정말 좋은 혜택이구나"라고 느끼고 가입을 마무리하고 싶게 만드는 문자 메시지를 작성해주세요. 사은품 혜택을 언급할 때는 반드시 "🎁 최대 혜택 금액\n${maxGiftAmountText}\n${giftBreakdownText}" 형식을 포함시켜 주세요.`;
+                userQuery = `${baseInfo}
+
+[메시지 작성 가이드라인]
+위 정보를 활용하여 고객이 "아, 정말 좋은 혜택이구나"라고 느끼고 가입을 마무리하고 싶게 만드는 문자 메시지를 작성해주세요. 
+만약 [제휴카드 정보]가 있다면, 이 혜택을 '놓치면 아까운 마지막 꿀팁'처럼 소개하며 최종 할인 가격을 명확히 강조해주세요.
+사은품 혜택을 언급할 때는 반드시 "🎁 최대 혜택 금액\\n${maxGiftAmountText}\\n${giftBreakdownText}" 형식을 포함시켜 주세요.`;
             } else if (promptType === 'happycall') {
                 systemPrompt = "당신은 대한민국 최고의 KT 인터넷 설치 후 고객 관리 전문가입니다. 인터넷 설치를 막 마친 고객에게 보낼 친절하고 따뜻한 '해피콜' 문자 메시지를 작성하는 것이 당신의 임무입니다. 인터넷은 잘 사용하고 계신지 확인하고, 고객이 선택한 상품의 핵심 혜택(저렴한 월 요금, 높은 사은품)을 다시 한번 상기시켜주며 '좋은 선택'을 했다는 확신을 주세요. 마지막으로 궁금한 점이 있으면 언제든 편하게 연락 달라는 내용으로 마무리해주세요. 전체적으로 따뜻하고 고객을 챙기는 느낌이 드러나야 합니다. 모든 응답은 반드시 '[미소] 고객님, 안녕하세요! KT미소 인터넷입니다 😊' 라는 문구로 시작해야 합니다.";
-                 userQuery = `고객 가입 정보:\n- 설치된 상품: ${internetDescription}\n- 확정된 월 요금: ${finalMonthlyCost.toLocaleString()}원\n- 지급된 사은품 상세: ${maxGiftAmountText} ${giftBreakdownText}\n\n위 정보를 바탕으로, 설치는 잘 됐는지 확인하고 고객이 받은 혜택을 다시 한번 짚어주어 만족감을 높이는 해피콜 문자 메시지를 작성해주세요. 사은품 혜택을 언급할 때는 반드시 "🎁 최대 혜택 금액\n${maxGiftAmountText}\n${giftBreakdownText}" 형식을 포함시켜 주세요.`;
-            }
+                userQuery = `${baseInfo}
 
+[메시지 작성 가이드라인]
+위 정보를 바탕으로, 설치는 잘 됐는지 확인하고 고객이 받은 혜택을 다시 한번 짚어주어 만족감을 높이는 해피콜 문자 메시지를 작성해주세요.
+만약 [제휴카드 정보]가 있다면, 고객님이 얼마나 현명한 소비를 하셨는지 다시 한번 상기시켜주는 용도로 자연스럽게 언급해주세요.
+사은품 혜택을 언급할 때는 반드시 "🎁 최대 혜택 금액\\n${maxGiftAmountText}\\n${giftBreakdownText}" 형식을 포함시켜 주세요.`;
+            } else if (promptType === 'persuasion_transcript') {
+                const transcript = transcriptInputEl.value;
+                if (!transcript.trim()) {
+                    alert("상담 내용을 입력해주세요."); // In a real app, use a custom modal
+                    geminiLoadingEl.classList.add('hidden');
+                    return;
+                }
+                systemPrompt = "당신은 통찰력 있는 KT 인터넷 영업 컨설턴트입니다. 당신의 임무는 고객 상담 내용을 깊이 있게 분석하여, 고객의 숨겨진 니즈와 망설임의 핵심을 파악하는 것입니다. 분석이 끝나면, 미리 계산된 최적의 상품 정보를 활용하여, 마치 고객의 마음을 읽은 듯한 섬세하고 필력 있는 맞춤형 설득 메시지를 작성해야 합니다. 딱딱한 정보 나열이 아닌, 고객의 상황에 깊이 공감하며 마음을 움직이는 글을 작성해주세요.";
+                userQuery = `아래 [고객 상담 내용]과 [계산된 상품 정보]를 바탕으로, 고객의 가입을 유도할 수 있는 강력하고 개인화된 문자 메시지를 작성해 주세요.
+
+[고객 상담 내용]
+---
+${transcript}
+---
+
+${baseInfo}
+
+[메시지 작성 가이드라인]
+1.  상담 내용에서 고객의 상황과 감정을 세심하게 파악하세요. 단순히 '속도'라는 단어가 아니라 '아이들이 여럿이라 끊기면 불편하다'는 맥락을 이해해야 합니다.
+2.  고객의 우려 사항(예: '요금이 비쌀까 봐 걱정돼요')을 먼저 언급하며 깊이 공감하고, [계산된 상품 정보]를 근거로 그 걱정이 기우였음을 자연스럽게 알려주세요.
+3.  고객의 핵심 니즈와 추천 상품의 장점을 감성적으로 연결해주세요. (예: "온 가족이 함께 유튜브를 봐도 끊길 걱정 없는 환경을 월 OOO원이면 만드실 수 있습니다.")
+4.  만약 [제휴카드 정보]가 있다면, 이 혜택을 '아는 분들만 챙겨가는 특별한 추가 혜택'처럼 소개하여 최종 할인 가격의 효과를 극대화해주세요.
+5.  전체적인 문장이 기계적이지 않고, 사람의 온기가 느껴지는 필력 있는 글로 완성해주세요.
+6.  반드시 "[미소] 고객님, 안녕하세요! 아까 상담 드렸던 KT미소입니다 😊"로 메시지를 시작해주세요.`;
+            }
+        
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`, {
+                // ----------------- [수정] API URL 변경 (최신 안정화 버전 사용) -----------------
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
+                // --------------------------------------------------------------------------
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2703,19 +2795,19 @@ ${scriptBlock500M}
                         }
                     }),
                 });
-
+        
                 if (!response.ok) {
                     throw new Error(`API 호출 실패: ${response.status}`);
                 }
-
+        
                 const data = await response.json();
                 const text = data.candidates[0].content.parts[0].text;
                 geminiResultTextareaEl.value = text;
                 geminiResultContainerEl.classList.remove('hidden');
-
+        
             } catch (error) {
                 console.error("Gemini API Error:", error);
-                geminiResultTextareaEl.value = "AI 문자 생성에 실패했습니다. 잠시 후 다시 시도해주세요.";
+                geminiResultTextareaEl.value = "AI 문자 생성에 실패했습니다. API 키가 유효한지, 또는 Pro 모델 사용 권한이 있는지 확인해주세요.";
                 geminiResultContainerEl.classList.remove('hidden');
             } finally {
                 geminiLoadingEl.classList.add('hidden');
@@ -2780,3 +2872,4 @@ https://miso.kr/booking/forms/secure-details?querystring=고객님 전화번호`
     </script>
 </body>
 </html>
+
