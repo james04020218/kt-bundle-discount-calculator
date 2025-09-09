@@ -1723,33 +1723,36 @@
  	 	 }
  	 	 
  	 	 function updateMvnoDetails() {
- 	 	 	 mvnoDetailsContainerEl.innerHTML = `
- 	 	 	 	 <div class="flex justify-between items-center mb-3">
- 	 	 	 	 	 <h4 class="font-bold text-gray-800 text-base">📱 KT 알뜰폰 결합</h4>
- 	 	 	 	 	 <button onclick="copyDiscountDetailsToClipboard('mvnoBundle')" class="btn-secondary text-xs py-1 px-2 rounded-md">내용 복사</button>
- 	 	 	 	 </div>
- 	 	 	 	 <p class="text-sm text-gray-700 bg-gray-100 p-2 rounded-md mb-3">
- 	 	 	 	 	 "KT망 알뜰폰 유저를 위한 인터넷 요금 할인!"
- 	 	 	 	 </p>
- 	 	 	 	 <div class="mb-3">
- 	 	 	 	 	 <h5 class="font-semibold text-slate-700 text-sm mb-1">🎁 핵심 혜택 (인터넷 요금만 할인)</h5>
- 	 	 	 	 	 <ul class="list-disc list-inside text-sm space-y-1 text-slate-600">
- 	 	 	 	 	 	 <li><strong>100M:</strong> <strong class="text-green-600">3,300원</strong> 할인</li>
- 	 	 	 	 	 	 <li><strong>500M/1G (단독):</strong> <strong class="text-green-600">11,000원</strong> 할인</li>
- 	 	 	 	 	 	 <li><strong>500M/1G (TV결합):</strong> <strong class="text-green-600">5,500원</strong> 할인</li>
- 	 	 	 	 	 </ul>
- 	 	 	 	 </div>
- 	 	 	 	 <div class="bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
- 	 	 	 	 	 <h5 class="font-bold text-amber-800 text-sm mb-1">⚠️ 꼭 확인하세요!</h5>
- 	 	 	 	 	 <ul class="list-disc list-inside text-sm space-y-1 text-amber-700">
- 	 	 	 	 	 	 <li>사업자 명의는 가입할 수 없어요.</li>
- 	 	 	 	 	 	 <li>인터넷 설치 후, <strong class="text-amber-900">알뜰폰 고객센터로 직접</strong> 결합을 요청해야 해요.</li>
- 	 	 	 	 	 	 <li>온라인으로 개통한 알뜰폰만 가능해요! (우체국/대리점 개통 불가)</li>
- 	 	 	 	 	 	 <li>결합 가능한 알뜰폰 통신사인지 꼭 확인해야 해요.</li>
- 	 	 	 	 	 </ul>
- 	 	 	 	 </div>
- 	 	 	 `;
- 	 	 }
+    mvnoDetailsContainerEl.innerHTML = `
+        <div class="flex justify-between items-center mb-3">
+            <h4 class="font-bold text-gray-800 text-base">📱 KT 알뜰폰 결합</h4>
+            <button onclick="copyDiscountDetailsToClipboard('mvnoBundle')" class="btn-secondary text-xs py-1 px-2 rounded-md">내용 복사</button>
+        </div>
+        <p class="text-sm text-gray-700 bg-gray-100 p-2 rounded-md mb-3">
+            "KT망 알뜰폰 유저를 위한 인터넷 요금 할인!"
+        </p>
+        <div class="mb-3">
+            <h5 class="font-semibold text-slate-700 text-sm mb-1">🎁 핵심 혜택 (인터넷 요금만 할인)</h5>
+            <ul class="list-disc list-inside text-sm space-y-1 text-slate-600">
+                <li><strong>100M:</strong> <strong class="text-green-600">3,300원</strong> 할인</li>
+                <li><strong>500M/1G (단독):</strong> <strong class="text-green-600">11,000원</strong> 할인</li>
+                <li><strong>500M/1G (TV결합):</strong> <strong class="text-green-600">5,500원</strong> 할인</li>
+            </ul>
+        </div>
+        <div class="bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
+            <h5 class="font-bold text-amber-800 text-sm mb-1">⚠️ 꼭 확인하세요!</h5>
+            <ul class="list-disc list-inside text-sm space-y-1 text-amber-700">
+                <li>사업자 명의는 가입할 수 없어요.</li>
+                <li>인터넷 설치 후, <strong class="text-amber-900">알뜰폰 고객센터로 직접</strong> 결합을 요청해야 해요.</li>
+                <li>온라인으로 개통한 알뜰폰만 가능해요! (우체국/대리점 개통 불가)</li>
+                <li>결합 가능한 알뜰폰 통신사인지 꼭 확인해야 해요.</li>
+                <li class="mt-1 text-xs break-keep">
+                    <strong>결합 가능 통신사:</strong> 1. 엠모바일 2. 미니게이트(쉐이크모바일) 3. 유니컴즈(모빙) 4. 토스모바일 5. 국민은행(리브모바일) 6. 더피엔엘 (퍼스트모바일) 7. 에르엘 (오파스넷모바일) 8. 고고팩토리 9. 스마텔 10. 코드모바일 11. 프리티 12. 니오라코리아 13. 스피츠모바일 14.아이즈비전 15. 스카이라이프( CU관련과 밀리의서재 요금제는 결합이 불가)
+                </li>
+                </ul>
+        </div>
+    `;
+}
  	 	 
  	 	 function calculateInstallationFee(internetSelected, tvSelected, phonePlanName, additionalTvSelected, installTime) {
  	 	 	 const timeKey = installTime === 'weekday' ? '평일' : '주말';
