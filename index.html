@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>웨이팅 인터넷 통합접수센터</title>
+    <title>KT 결합 할인 계산기</title>
     <script src="https://cdn.tailwindcss.com"></script>
       
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -54,9 +54,19 @@
 </head>
 <body class="text-slate-800">
     <header class="bg-sky-700 text-white p-6 shadow-md">
-        <div class="container mx-auto max-w-4xl">
-            <h1 class="text-3xl font-bold text-center">KT 결합 할인 계산기</h1>
-            <p class="text-center text-sky-200 mt-1">선택하신 서비스와 할인 유형에 따른 예상 요금을 계산해 보세요.</p>
+        <div class="container mx-auto max-w-4xl flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold">KT 결합 할인 계산기</h1>
+                <p class="text-sky-200 mt-1">선택하신 서비스와 할인 유형에 따른 예상 요금을 계산해 보세요.</p>
+            </div>
+            <div class="flex items-center text-sm">
+                <span class="font-medium mr-2">VAT 별도</span>
+                <label for="vatToggleSwitch" class="toggle-switch">
+                    <input type="checkbox" id="vatToggleSwitch">
+                    <span class="slider"></span>
+                </label>
+                <span class="font-medium ml-2">VAT 포함</span>
+            </div>
         </div>
     </header>
 
@@ -531,6 +541,8 @@
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <script>
         // script.js (Modified version with VAT handling and updated features)
+
+        let isVatIncluded = false; // VAT toggle state
           
         // Helper function for VAT conversion (Request 4)
         function toPreVat(price) {
@@ -984,8 +996,16 @@
         const commissionSectionEl = document.getElementById('commissionSection');
         const commissionTierEl = document.getElementById('commissionTier');
         const commissionNotesEl = document.getElementById('commissionNotes');
+        const vatToggleSwitchEl = document.getElementById('vatToggleSwitch');
           
         // ------------------- Event Listeners -------------------
+        vatToggleSwitchEl.addEventListener('change', function() {
+            isVatIncluded = this.checked;
+            if (!resultSection.classList.contains('hidden')) {
+                calculateAndDisplayResults();
+            }
+        });
+
         mobileLinesCountEl.addEventListener('input', updateMobileLinesInputs);
         calculateButton.addEventListener('click', calculateAndDisplayResults);
         resetButton.addEventListener('click', resetCalculator);
@@ -2311,6 +2331,7 @@
                 // Other info
                 currentInternet,
                 installationFeeSelfPay,
+                isVatIncluded, // Pass the toggle state
             };
         }
           
@@ -2330,29 +2351,37 @@
                 numMobileLines, discountType, currentInternet
             } = results;
       
-            // Summary Card (VAT Included)
-            const costToShowInSummary = cardDiscountAmount > 0 ? finalCostWithCard : finalMonthlyCost;
+            // Summary Card (Dynamically updates with VAT)
+            const summaryTitleEl = resultSection.querySelector('h3');
+            summaryTitleEl.textContent = `✅ 최종 요금 및 혜택 요약 ${isVatIncluded ? '(VAT 포함)' : '(VAT 별도)'}`;
+
+            const costToShowInSummary = isVatIncluded ? (cardDiscountAmount > 0 ? finalCostWithCard : finalMonthlyCost) : (cardDiscountAmount > 0 ? finalCostWithCard - vatAmount : finalMonthlyCost_PreVat);
             summaryFinalCostEl.textContent = `${costToShowInSummary.toLocaleString()} 원`;
+
             if (cardDiscountAmount > 0) {
                 summaryCardAppliedEl.textContent = `(${selectedCardData.name} 적용가)`;
             } else {
                 summaryCardAppliedEl.textContent = '';
             }
       
-            if (totalPreDiscountCost > finalMonthlyCost) {
-                summaryPreDiscountCostEl.textContent = `할인 전 ${totalPreDiscountCost.toLocaleString()} 원`;
+            const totalPreDiscountCostToShow = isVatIncluded ? totalPreDiscountCost : totalPreDiscountCost - Math.round((totalPreDiscountCost / 1.1) * 0.1);
+            if (totalPreDiscountCostToShow > costToShowInSummary) {
+                summaryPreDiscountCostEl.textContent = `할인 전 ${totalPreDiscountCostToShow.toLocaleString()} 원`;
                 summaryPreDiscountCostEl.style.display = 'block';
             } else {
                 summaryPreDiscountCostEl.style.display = 'none';
             }
-            // (Request 4: Display internet discount VAT included in summary)
-            const totalInternetDiscountVatIncluded = Math.round((internetDiscount + currentTvDiscount) * 1.1);
-            summaryInternetDiscountEl.textContent = `- ${totalInternetDiscountVatIncluded.toLocaleString()} 원`;
-            summaryMobileDiscountEl.textContent = `- ${totalMobileDiscount.toLocaleString()} 원`;
+
+            const totalInternetDiscountToShow = isVatIncluded ? Math.round((internetDiscount + currentTvDiscount) * 1.1) : (internetDiscount + currentTvDiscount);
+            summaryInternetDiscountEl.textContent = `- ${totalInternetDiscountToShow.toLocaleString()} 원`;
+            summaryMobileDiscountEl.textContent = `- ${totalMobileDiscount.toLocaleString()} 원`; // Mobile discount is always VAT-inclusive
             summaryGiftTotalEl.textContent = `${maxGiftAmount.toLocaleString()} 원`;
             document.getElementById('summaryGiftBreakdown').textContent = `(확정 사은품 ${confirmedGiftAmount.toLocaleString()}원)`;
       
-            // Expanded Details (Pre-VAT for details, VAT Included for final totals)
+            // Expanded Details (Dynamically updates with VAT)
+            const expandedDetailsTitleEl = expandedDetailsContainer.querySelector('h3');
+            expandedDetailsTitleEl.textContent = `📋 상세 요금 내역 ${isVatIncluded ? '(VAT 포함)' : '(VAT 별도)'}`;
+
             const internetOption = Array.from(internetPlanEl.options).find(opt => opt.value === internetPlanName);
             selectedInternetEl.textContent = internetOption ? internetOption.text.split(" (")[0] : '미선택';
             const tvOption = Array.from(tvPlanEl.options).find(opt => opt.value === tvPlanName);
@@ -2380,18 +2409,36 @@
             };
             selectedDiscountTypeEl.textContent = discountTypeMap[discountType] || "알 수 없음";
       
-            // (Request 4: Displaying Pre-VAT details)
-            detailInternetBaseEl.textContent = `${(internetBase + tvBase + additionalTvCost + phoneBase + addonServicesTotalCost).toLocaleString()} 원`;
-            detailWifiFeeEl.textContent = `${actualWifiRouterFee.toLocaleString()} 원`;
-            detailInternetDiscountTotalEl.textContent = `- ${(internetDiscount + currentTvDiscount).toLocaleString()} 원`;
+            // (Dynamically updated VAT details)
+            const calculationProcessTitleEl = expandedDetailsContainer.querySelector('.result-card:nth-of-type(2) h3');
+            calculationProcessTitleEl.textContent = `🖥️ 인터넷/TV 요금 계산 과정 ${isVatIncluded ? '(VAT 포함)' : '(VAT 별도)'}`;
+
+            const baseCost = internetBase + tvBase + additionalTvCost + phoneBase + addonServicesTotalCost;
+            const totalDiscount = internetDiscount + currentTvDiscount;
+
+            detailInternetBaseEl.textContent = `${(isVatIncluded ? Math.round(baseCost * 1.1) : baseCost).toLocaleString()} 원`;
+            detailWifiFeeEl.textContent = `${(isVatIncluded ? Math.round(actualWifiRouterFee * 1.1) : actualWifiRouterFee).toLocaleString()} 원`;
+            detailInternetDiscountTotalEl.textContent = `- ${(isVatIncluded ? Math.round(totalDiscount * 1.1) : totalDiscount).toLocaleString()} 원`;
+
+            // Hide/show VAT rows based on toggle
+            detailFinalCostPreVatEl.parentElement.style.display = isVatIncluded ? 'flex' : 'none';
+            detailVatAmountEl.parentElement.style.display = isVatIncluded ? 'flex' : 'none';
             detailFinalCostPreVatEl.textContent = `${finalMonthlyCost_PreVat.toLocaleString()} 원`;
             detailVatAmountEl.textContent = `${vatAmount.toLocaleString()} 원`;
-            detailFinalCostEl.textContent = `${finalMonthlyCost.toLocaleString()} 원`;
+
+            // Adjust final cost display
+            const finalCostLabel = detailFinalCostEl.parentElement.querySelector('span');
+            finalCostLabel.textContent = `최종 예상 월 납부액 ${isVatIncluded ? '(VAT 포함)' : '(VAT 별도)'}`;
+            detailFinalCostEl.textContent = `${(isVatIncluded ? finalMonthlyCost : finalMonthlyCost_PreVat).toLocaleString()} 원`;
              
             if (cardDiscountAmount > 0 && selectedCardData) {
                 selectedCardNameEl.textContent = selectedCardData.name;
                 detailCardDiscountEl.textContent = `- ${cardDiscountAmount.toLocaleString()} 원`;
-                detailFinalCardCostEl.textContent = `${finalCostWithCard.toLocaleString()} 원`;
+                detailFinalCardCostEl.textContent = `${(isVatIncluded ? finalCostWithCard : finalCostWithCard - vatAmount).toLocaleString()} 원`;
+
+                const finalCardCostLabel = detailFinalCardCostContainerEl.querySelector('span');
+                finalCardCostLabel.textContent = `✨ 카드 적용 최종 납부액 ${isVatIncluded ? '(VAT 포함)' : '(VAT 별도)'}`;
+
                 detailCardDiscountContainerEl.classList.remove('hidden');
                 detailFinalCardCostContainerEl.classList.remove('hidden');
                 finalCardCostSeparatorEl.classList.remove('hidden');
@@ -2467,7 +2514,8 @@
                 internetPlanName, tvPlanName, additionalTvPlanKey, phonePlanName,
                 currentInternet, finalCostWithCard, cardDiscountAmount, selectedCardData,
                 finalMonthlyCost_PreVat,
-                installationFeeSelfPay
+                installationFeeSelfPay,
+                isVatIncluded
             } = results;
             
             // --- 1. Generate Memo Script (VAT INCLUDED) ---
@@ -2548,10 +2596,10 @@
     2.  이사 고객 Y / 추후 소명 발생 시 관련 서류 제출 동의 수긍
     3.  인터넷 설치 후 고객센터로 후결합 요청 안내 완료`;
       
-            // --- 2. Generate Info Script (VAT EXCLUDED) ---
+            // --- 2. Generate Info Script (Dynamically updated with VAT) ---
             infoScriptEl.value = generateInfoScriptForPlan(results);
       
-            // --- 3. Generate Complete Script (VAT EXCLUDED) ---
+            // --- 3. Generate Complete Script (Dynamically updated with VAT) ---
             let productDescriptionComplete = [];
             if (internetPlanText !== '인터넷 미선택') {
                 let internetLine = `▶️ ${internetPlanText}`;
@@ -2574,11 +2622,10 @@
                 productDescriptionComplete.push(`▶️ 종합OTT6종 3년간 무상지원(넷플릭스/티빙/디즈니플러스/웨이브/쿠팡플레이/지상파다시보기/총70만원상당)`);
             }
 
-            // Complete script uses VAT EXCLUDED costs
-            // Calculate Pre-VAT cost after card discount (for perceived lower cost)
-            const finalCostPreVat_WithCard = finalMonthlyCost_PreVat - cardDiscountAmount;
-            const finalCostForComplete = cardDiscountAmount > 0 ? finalCostPreVat_WithCard : finalMonthlyCost_PreVat;
-
+            const vatLabel = isVatIncluded ? "VAT 포함" : "VAT 별도";
+            const finalCostForComplete = isVatIncluded ? finalMonthlyCost : finalMonthlyCost_PreVat;
+            const finalCostWithCardForComplete = isVatIncluded ? finalCostWithCard : (finalMonthlyCost_PreVat - cardDiscountAmount);
+            const costToDisplay = cardDiscountAmount > 0 ? finalCostWithCardForComplete : finalCostForComplete;
             const cardInfoForComplete = cardDiscountAmount > 0 ? ` (${selectedCardData.name} 적용가)` : (discountType !== 'none' ? ' (결합 O)' : ' (결합 X)');
       
             let completeScriptContent = `[웨이팅 인터넷 통합접수센터] 가입 완료 안내
@@ -2595,11 +2642,11 @@
     ⚠️ 3년 이내 해지 시 통신사 본사에 위약금 (할인 반환금) 및 통신사에 따라 면제된 와이파이 / 통신기기 설치비 반환이 필요할 수 있어요.
     ✅ 가입 상품 안내
     ${productDescriptionComplete.join('\n')}
-    ▶️ 월 ${finalCostForComplete.toLocaleString()}원${cardInfoForComplete} (⚠️VAT 별도)
+    ▶️ 월 ${costToDisplay.toLocaleString()}원${cardInfoForComplete} (⚠️${vatLabel})
     ▶️ 설치비 ${installFee.toLocaleString()}원 첫 달 부과 (VAT 포함) ${installationFeeSelfPay ? '(자체 지원)' : ''}
     ▶️ 사은품 ${confirmedGiftAmount.toLocaleString()}원 (확정)
     
-    * 안내된 월 요금은 VAT(부가세) 별도 금액이며, 실제 청구 시 10%의 부가세가 추가됩니다.
+    * 안내된 월 요금은 VAT(부가세) ${isVatIncluded ? '포함' : '별도'} 금액이며, ${isVatIncluded ? '' : '실제 청구 시 10%의 부가세가 추가됩니다.'}
     ✅사은품은 설치 후 7일 이내 자동으로 지급되나 평일기준 5시 이전 개통 받았다고 문자 주시면 당일입금 도움드리겠습니다.`;
       
             if (isPostApplied) {
@@ -2632,10 +2679,11 @@
                 selectedWifiData, mobileLinesDetails,
                 confirmedGiftAmount,
                 cardDiscountAmount, selectedCardData,
-                finalMonthlyCost_PreVat,
+                finalMonthlyCost_PreVat, finalMonthlyCost, finalCostWithCard,
                 currentInternet,
                 installationFeeSelfPay,
-                installFee
+                installFee,
+                isVatIncluded
             } = results;
 
             const discountTypeName = selectedDiscountTypeEl.textContent;
@@ -2666,14 +2714,16 @@
                 productDescriptionInfo += `\n    ▶️ 종합OTT6종 3년간 무상지원(넷플릭스/티빙/디즈니플러스/웨이브/쿠팡플레이/지상파다시보기/총70만원상당)`;
             }
 
-            const finalCostPreVat_WithCard = finalMonthlyCost_PreVat - cardDiscountAmount;
+            const vatLabel = `(⚠️${isVatIncluded ? 'VAT 포함' : 'VAT 별도'})`;
+            const costBeforeCard = isVatIncluded ? finalMonthlyCost : finalMonthlyCost_PreVat;
 
             let finalCostBlock = `\n[최종 요금 및 혜택]
-    ▶️ 월 ${finalMonthlyCost_PreVat.toLocaleString()}원 (${discountTypeName}, VAT별도)
+    ▶️ 월 ${costBeforeCard.toLocaleString()}원 (${discountTypeName}, ${isVatIncluded ? 'VAT포함' : 'VAT별도'})
     ▶️ 사은품 ${confirmedGiftAmount.toLocaleString()}원 (확정)`;
 
             if (cardDiscountAmount > 0) {
-                 finalCostBlock += `\n    ▶️ 기존 월 ${finalMonthlyCost_PreVat.toLocaleString()}원 - 카드 자동이체 청구 할인 ${cardDiscountAmount.toLocaleString()}원\n    = ✨ 최종 월 납부액 ${(finalMonthlyCost_PreVat - cardDiscountAmount).toLocaleString()}원! ✨ (⚠️VAT 별도)`;
+                 const costWithCard = isVatIncluded ? finalCostWithCard : (finalMonthlyCost_PreVat - cardDiscountAmount);
+                 finalCostBlock += `\n    ▶️ 기존 월 ${costBeforeCard.toLocaleString()}원 - 카드 자동이체 청구 할인 ${cardDiscountAmount.toLocaleString()}원\n    = ✨ 최종 월 납부액 ${costWithCard.toLocaleString()}원! ✨ ${vatLabel}`;
             }
 
             if (installationFeeSelfPay) {
