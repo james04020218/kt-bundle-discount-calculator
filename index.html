@@ -2517,109 +2517,67 @@
         }
           
         function generateInfoScriptForPlan(results) {
-            const { 
+            const {
                 internetPlanName, tvPlanName, additionalTvPlanKey, phonePlanName,
                 selectedWifiData, mobileLinesDetails,
-                confirmedGiftAmount, maxGiftAmount,
+                confirmedGiftAmount,
                 cardDiscountAmount, selectedCardData,
                 finalMonthlyCost_PreVat,
                 currentInternet,
                 installationFeeSelfPay,
                 installFee
             } = results;
-      
+
             const discountTypeName = selectedDiscountTypeEl.textContent;
-      
             const internetOption = Array.from(internetPlanEl.options).find(opt => opt.value === internetPlanName);
             const internetPlanText = internetOption ? internetOption.text.split(' (')[0] : '인터넷 미선택';
-             
             const tvOption = Array.from(tvPlanEl.options).find(opt => opt.value === tvPlanName);
             let firstTvText = "미선택";
-            if (tvOption && tvOption.value !== 'none' && tvPlans_KT[tvOption.value]) { 
-                firstTvText = `${tvOption.text.split(' (')[0]} + ${tvPlans_KT[tvOption.value].stbIncluded} 셋톱 임대 포함`;
+            if (tvOption && tvOption.value !== 'none' && tvPlans_KT[tvOption.value]) {
+                firstTvText = tvOption.text.split(' (')[0];
             }
             const additionalTvText = additionalTvPlanKey !== 'none' ? ` + (추가) ${additionalTvPlans_KT[additionalTvPlanKey].name}` : "";
-             
             const phoneOption = Array.from(phonePlanEl.options).find(opt => opt.value === phonePlanName);
             let phoneText = "미선택";
             if (phoneOption && phoneOption.value !== 'none') {
                 phoneText = phoneOption.text.split(' (')[0];
             }
-      
+
             let productDescriptionInfo = `[유선 상품]
     ▶️ ${internetPlanText}
     ▶️ ${firstTvText !== '미선택' ? firstTvText : 'TV 미선택'}${additionalTvText}
     ▶️ ${phoneText !== '미선택' ? phoneText : '집전화 미선택'}`;
-             
+
             if (selectedWifiData && selectedWifiData.name !== "KT공유기 X") {
-                productDescriptionInfo += `\n▶️ ${selectedWifiData.name}`;
-                if (selectedWifiData.url) {
-                    productDescriptionInfo += `\n    (정보: ${selectedWifiData.url})`;
-                }
+                productDescriptionInfo += `\n    ▶️ ${selectedWifiData.name}`;
             }
 
             if (currentInternet.isOttPlan) {
-                productDescriptionInfo += `\n▶️ 종합OTT6종 3년간 무상지원(넷플릭스/티빙/디즈니플러스/웨이브/쿠팡플레이/지상파다시보기/총70만원상당)`;
-            }
-             
-            const actualMobileLines = mobileLinesDetails.filter(line => line.cost > 0);
-            if (actualMobileLines.length > 0) {
-                productDescriptionInfo += `\n\n[결합 모바일]`;
-                actualMobileLines.forEach(line => {
-                    let discountText = '';
-                    if (line.totalAmountLineDiscount > 0) discountText += ` - ${line.totalAmountLineDiscount.toLocaleString()} (총액)`;
-                    if (line.fixedRateLineDiscount > 0) discountText += ` - ${line.fixedRateLineDiscount.toLocaleString()} (정액)`;
-                    if (line.bundleDiscount > 0) discountText += ` - ${line.bundleDiscount.toLocaleString()} (결합)`;
-                    if (line.selectiveDiscount > 0) discountText += ` - ${line.selectiveDiscount.toLocaleString()} (선약)`;
-                      
-                    productDescriptionInfo += `\n▶️ ${line.name} (${line.cost.toLocaleString()}원)${discountText} = 최종 ${line.finalBill.toLocaleString()}원`;
-                    if (line.url) {
-                        productDescriptionInfo += `\n    (정보: ${line.url})`;
-                    }
-                });
+                productDescriptionInfo += `\n    ▶️ 종합OTT6종 3년간 무상지원(넷플릭스/티빙/디즈니플러스/웨이브/쿠팡플레이/지상파다시보기/총70만원상당)`;
             }
 
-            // Calculate Pre-VAT cost after card discount (for perceived lower cost)
             const finalCostPreVat_WithCard = finalMonthlyCost_PreVat - cardDiscountAmount;
 
-            let finalCostBlock = `[최종 요금 및 혜택]
-    ▶️ 월 ${finalMonthlyCost_PreVat.toLocaleString()}원 (${discountTypeName}, <span style="font-size: 0.8em;">VAT별도</span>)
+            let finalCostBlock = `\n[최종 요금 및 혜택]
+    ▶️ 월 ${finalMonthlyCost_PreVat.toLocaleString()}원 (${discountTypeName}, VAT별도)
     ▶️ 사은품 ${confirmedGiftAmount.toLocaleString()}원 (확정)`;
+
+            if (cardDiscountAmount > 0) {
+                 finalCostBlock += `\n    ▶️ ${selectedCardData.name} 적용시 월 ${finalCostPreVat_WithCard.toLocaleString()}원 (VAT별도)`;
+            }
 
             if (installationFeeSelfPay) {
                 finalCostBlock += `\n    ▶️ 설치비 ${installFee.toLocaleString()}원 지원 (자체지급)`;
             }
-             
-            if (cardDiscountAmount > 0 && selectedCardData) {
-                const selectedCardTierEl = document.querySelector('input[name="cardTier"]:checked');
-                // Ensure tierLabel is derived correctly even if the DOM structure changes slightly
-                let tierLabel = "실적 충족";
-                if (selectedCardTierEl && selectedCardTierEl.parentElement) {
-                    const fullLabelText = selectedCardTierEl.parentElement.textContent.trim();
-                    tierLabel = fullLabelText.split(' (')[0];
-                }
 
-                finalCostBlock += `
-      
-    [💳 ${selectedCardData.name} 추가 할인으로 더 저렴하게!]
-    고객님, ${selectedCardData.name}으로 결제하고 전월 ${tierLabel} 사용 시, 매달 ${cardDiscountAmount.toLocaleString()}원을 추가로 아끼실 수 있습니다!
-      
-    기존 월 ${finalMonthlyCost_PreVat.toLocaleString()}원 - 카드 자동이체 청구 할인 ${cardDiscountAmount.toLocaleString()}원
-    = ✨ 최종 월 납부액 ${finalCostPreVat_WithCard.toLocaleString()}원! ✨ (<span style="font-size: 0.8em;">VAT별도</span>)
-      
-    * 본 할인은 전월 실적 충족 시 적용되며, 자세한 내용은 ${selectedCardData.name}(${selectedCardData.phone})로 문의 바랍니다.`;
-            }
-      
-            // (Request 3: Rebranding)
             return `[웨이팅 인터넷 통합접수센터] 상품 & 사은품 요약 안내
     안녕하세요, 웨이팅 인터넷 통합접수센터 입니다.
     고객님께서 오늘 상담 받으신 상품 안내드립니다.
     ${productDescriptionInfo}
-      
     ${finalCostBlock}
       
     * 혜택은 실시간으로 바뀔 수 있다는 점 안내드립니다.
-    * 3년 약정 기준 (안내된 월 요금은 VAT 별도 기준이며, 실제 청구 시 10%의 부가세가 추가됩니다.)
+    * 3년 약정 기준
     웨이팅 인터넷 통합접수센터 드림. ❤️`;
         }
           
