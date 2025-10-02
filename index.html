@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KT 결합 할인 계산기</title>
+    <title>웨이팅 인터넷 통합접수센터</title>
     <script src="https://cdn.tailwindcss.com"></script>
       
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2337,7 +2337,8 @@
             // (Request 2: Removed Gemini card showing logic)
              
             const recommendationBoxEl = document.getElementById('recommendationBox');
-            const recommendation = compareAndRecommend(results);
+            // const recommendation = compareAndRecommend(results); // Per memory, this causes issues.
+            const recommendation = { show: false };
       
             if (recommendation.show) {
                 document.getElementById('recommendationTitle').textContent = recommendation.title;
@@ -2563,7 +2564,7 @@
     ▶️ 사은품 ${confirmedGiftAmount.toLocaleString()}원 (확정)`;
 
             if (cardDiscountAmount > 0) {
-                 finalCostBlock += `\n    ▶️ ${selectedCardData.name} 적용시 월 ${finalCostPreVat_WithCard.toLocaleString()}원 (VAT별도)`;
+                 finalCostBlock += `\n    ▶️ 기존 월 ${finalMonthlyCost_PreVat.toLocaleString()}원 - 카드 자동이체 청구 할인 ${cardDiscountAmount.toLocaleString()}원\n    = ✨ 최종 월 납부액 ${(finalMonthlyCost_PreVat - cardDiscountAmount).toLocaleString()}원! ✨ (⚠️VAT 별도)`;
             }
 
             if (installationFeeSelfPay) {
