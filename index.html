@@ -317,6 +317,18 @@
                 </div>
             </div>
         </section>
+
+        <section id="commissionSection" class="mb-8 hidden">
+            <h2 class="section-title">5. 수수료 정책 선택 (OTT상품용)</h2>
+            <div class="input-group bg-white p-6 rounded-lg shadow">
+                <label for="commissionTier" class="input-label">판매수수료 선택</label>
+                <select id="commissionTier" class="select-field">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+                 <div id="commissionNotes" class="mt-3 text-xs text-slate-500"></div>
+            </div>
+        </section>
+
         <div class="text-center mb-8 flex justify-center items-center">
             <button id="calculateButton" class="btn-primary text-lg">예상 요금 계산하기</button>
             <button id="resetButton" class="btn-secondary text-lg ml-4">초기화</button>
@@ -967,6 +979,11 @@
         const detailFinalCardCostContainerEl = document.getElementById('detailFinalCardCostContainer');
         const detailFinalCardCostEl = document.getElementById('detailFinalCardCost');
         const finalCardCostSeparatorEl = document.getElementById('finalCardCostSeparator');
+
+        // --- New Commission Section selectors ---
+        const commissionSectionEl = document.getElementById('commissionSection');
+        const commissionTierEl = document.getElementById('commissionTier');
+        const commissionNotesEl = document.getElementById('commissionNotes');
           
         // ------------------- Event Listeners -------------------
         mobileLinesCountEl.addEventListener('input', updateMobileLinesInputs);
@@ -1249,6 +1266,7 @@
             }
             tvPlanEl.dispatchEvent(new Event('change'));
             internetPlanEl.dispatchEvent(new Event('change'));
+            updateCommissionSectionVisibility();
         }
           
           
@@ -1264,6 +1282,7 @@
       
             if (!selectedOption || selectedOption.value === 'none') {
                 updateDiscountTypeAvailability();
+                updateCommissionSectionVisibility();
                 return;
             }
       
@@ -1277,11 +1296,33 @@
                 }
             } 
             updateDiscountTypeAvailability();
+            updateCommissionSectionVisibility();
         });
           
           
         tvPlanEl.addEventListener('change', () => {
             const isTvSelected = tvPlanEl.value !== 'none';
+            // When TV plan changes, we need to re-evaluate which commission tiers are available for OTT plans.
+            updateCommissionSectionVisibility();
+        });
+
+        commissionTierEl.addEventListener('change', () => {
+            const selectedOption = commissionTierEl.options[commissionTierEl.selectedIndex];
+            if (!selectedOption || !selectedOption.dataset.notes) {
+                commissionNotesEl.innerHTML = '';
+                return;
+            }
+
+            try {
+                const notes = JSON.parse(selectedOption.dataset.notes);
+                if (notes && notes.length > 0) {
+                    commissionNotesEl.innerHTML = '<strong>참고사항:</strong><ul class="list-disc list-inside pl-2 mt-1">' + notes.map(note => `<li>${note}</li>`).join('') + '</ul>';
+                } else {
+                    commissionNotesEl.innerHTML = '';
+                }
+            } catch(e) {
+                commissionNotesEl.innerHTML = '';
+            }
         });
           
         additionalTvPlanEl.addEventListener('change', () => {
@@ -1756,6 +1797,69 @@
         `;
     }
           
+        function updateCommissionSectionVisibility() {
+            const selectedOption = internetPlanEl.options[internetPlanEl.selectedIndex];
+            const isOtt = selectedOption && selectedOption.dataset.isOttPlan === 'true';
+
+            commissionSectionEl.classList.toggle('hidden', !isOtt);
+
+            if (isOtt) {
+                populateCommissionTiers();
+            }
+        }
+
+        function populateCommissionTiers() {
+            const isBundle = document.querySelector('input[name="internetType"]:checked').value === 'bundle';
+            const tvPlanOption = tvPlanEl.options[tvPlanEl.selectedIndex];
+            const tvCategory = tvPlanOption ? tvPlanOption.dataset.category : null;
+
+            commissionTierEl.innerHTML = ''; // Clear existing options
+            commissionNotesEl.innerHTML = ''; // Clear notes
+
+            let rules;
+            let originalRulesSource;
+
+            if (isBundle) {
+                if (!tvCategory || tvCategory === '없음') {
+                    commissionTierEl.innerHTML = '<option value="-1">TV 요금제를 선택해주세요</option>';
+                    return;
+                }
+
+                const isPremiumTier = ['에센스', '에센스 플러스', '넷플릭스 HD', '넷플릭스 UHD', '키즈랜드'].includes(tvCategory);
+                const planTierFilter = isPremiumTier ? 'premium' : 'basic';
+
+                originalRulesSource = ottCommissionRules_KT.internet_tv.commission_rules;
+                rules = originalRulesSource.filter(rule => rule.plan_tier === planTierFilter);
+
+            } else { // Standalone
+                originalRulesSource = ottCommissionRules_KT.internet_only.commission_rules;
+                rules = originalRulesSource;
+            }
+
+            if (!rules || rules.length === 0) {
+                commissionTierEl.innerHTML = '<option value="-1">해당 조건에 맞는 수수료 정책이 없습니다</option>';
+                return;
+            }
+
+            rules.forEach(rule => {
+                const option = document.createElement('option');
+                const originalIndex = originalRulesSource.indexOf(rule);
+                option.value = originalIndex;
+
+                let text;
+                if (isBundle) {
+                    text = `수수료 ${rule.commission.toLocaleString()}원 (지원금: ${rule.support_money_min.toLocaleString()}~${rule.support_money_max.toLocaleString()}원)`;
+                } else {
+                    text = `수수료 ${rule.commission.toLocaleString()}원 (지원금: ${rule.support_money.toLocaleString()}원)`;
+                }
+                option.textContent = text;
+                option.dataset.notes = JSON.stringify(rule.notes || []);
+                commissionTierEl.appendChild(option);
+            });
+
+            commissionTierEl.dispatchEvent(new Event('change'));
+        }
+
         function calculateInstallationFee(internetSelected, tvSelected, phonePlanName, additionalTvSelected, installTime) {
             const timeKey = installTime === 'weekday' ? 'weekday' : 'weekend_night';
             const feeTable = ktInstallationFees_new[timeKey];
@@ -1834,6 +1938,7 @@
       
             const selectedCardId = affiliateCardEl.value;
             const selectedCardTierEl = document.querySelector('input[name="cardTier"]:checked');
+            const selectedCommissionIndex = commissionTierEl.value; // The value is the rule's index
             // (Request 4: Card discount applies to the final VAT-included bill, so we keep it as is)
             const cardDiscountAmount = selectedCardTierEl ? parseInt(selectedCardTierEl.value) : 0;
             const selectedCardData = affiliateCardDiscounts[selectedCardId];
@@ -2098,20 +2203,24 @@
                 const tvOptionForGift = Array.from(tvPlanEl.options).find(opt => opt.value === tvPlanName);
                 const tvCategoryForGift = isTvSelectedForGift && tvOptionForGift ? (tvOptionForGift.dataset.category || "베이직") : "베이직";
 
-                if (currentInternet.isOttPlan) {
-                    const rules = isTvSelectedForGift ? ottCommissionRules_KT.internet_tv.commission_rules : ottCommissionRules_KT.internet_only.commission_rules;
-                    // For simplicity, we'll just take the first matching rule's max support money.
-                    // A more complex implementation could allow selecting a commission tier.
-                    const applicableRule = rules[0];
-                    if(isTvSelectedForGift) {
-                        giftCash = applicableRule.support_money_max;
-                        giftVoucher = 0;
-                    } else {
-                        // For internet only, the structure is different
-                        giftCash = applicableRule.support_money; // Example, might need adjustment based on payout_method
-                        giftVoucher = 0; // Or parse from payout_method
-                    }
+                if (currentInternet.isOttPlan && selectedCommissionIndex !== null && selectedCommissionIndex >= 0) {
+                    const rulesSource = isTvSelectedForGift
+                        ? ottCommissionRules_KT.internet_tv.commission_rules
+                        : ottCommissionRules_KT.internet_only.commission_rules;
 
+                    const applicableRule = rulesSource[selectedCommissionIndex];
+
+                    if (applicableRule) {
+                        if (isTvSelectedForGift) {
+                            giftCash = applicableRule.support_money_max || 0;
+                            giftVoucher = 0;
+                        } else { // Standalone OTT
+                            const totalGift = applicableRule.support_money || applicableRule.support_money_max || 0;
+                            const voucherMatch = applicableRule.payout_method.match(/상품권\s*([\d,]+)원/);
+                            giftVoucher = voucherMatch ? parseInt(voucherMatch[1].replace(/,/g, ''), 10) : 0;
+                            giftCash = totalGift - giftVoucher;
+                        }
+                    }
                 } else {
                     let giftKeyPrefix = "";
                     if (!isTvSelectedForGift) {
@@ -2899,6 +3008,7 @@
 
             // Final UI state updates
             updateDiscountTypeAvailability();
+            updateCommissionSectionVisibility();
         }
           
         function resetCalculator() {
